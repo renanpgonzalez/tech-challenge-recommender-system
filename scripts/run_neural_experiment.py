@@ -15,6 +15,7 @@ from recommender.tracking import (
 )
 from recommender.training import (
     NeuralTrainingConfig,
+    sample_training_data,
     save_neural_model,
     train_neural_recommender,
 )
@@ -44,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-name", type=str, default="neural_recommender_v1")
     parser.add_argument("--tracking-uri", type=str, default="sqlite:///mlflow.db")
     parser.add_argument("--experiment-name", type=str, default="product-recommender")
+    parser.add_argument("--sample-size", type=int, default=None)
 
     return parser.parse_args()
 
@@ -89,6 +91,7 @@ def run(
     run_name: str,
     tracking_uri: str,
     experiment_name: str,
+    sample_size: int | None,
 ) -> None:
     """Run a tracked neural training experiment.
 
@@ -103,6 +106,15 @@ def run(
         experiment_name: MLflow experiment name.
     """
     train_data = read_dataframe(train_path)
+    original_training_rows = len(train_data)
+    train_data = sample_training_data(
+        data=train_data,
+        sample_size=sample_size,
+        random_seed=config.random_seed,
+    )
+
+    print(f"Original training rows: {original_training_rows}")
+    print(f"Effective training rows: {len(train_data)}")
     model, result, history = train_neural_recommender(train_data, config)
 
     save_neural_model(
@@ -113,7 +125,12 @@ def run(
         history=history,
     )
 
-    params = build_neural_params(config, training_rows=len(train_data))
+    params = build_neural_params(
+        config=config,
+        training_rows=len(train_data),
+        original_training_rows=original_training_rows,
+        sample_size=sample_size,
+    )
     metrics = build_neural_metrics(result)
 
     save_json({**metrics, **asdict(config)}, metrics_output_path)
@@ -152,6 +169,7 @@ def main() -> None:
         run_name=args.run_name,
         tracking_uri=args.tracking_uri,
         experiment_name=args.experiment_name,
+        sample_size=args.sample_size,
     )
 
 

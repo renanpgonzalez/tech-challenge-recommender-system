@@ -10,6 +10,8 @@ from recommender.training import NeuralTrainingConfig, NeuralTrainingResult
 def build_neural_params(
     config: NeuralTrainingConfig,
     training_rows: int,
+    original_training_rows: int | None = None,
+    sample_size: int | None = None,
 ) -> dict[str, float | int | str]:
     """Build MLflow parameters for neural training.
 
@@ -31,6 +33,8 @@ def build_neural_params(
         "validation_fraction": config.validation_fraction,
         "patience": config.patience,
         "random_seed": config.random_seed,
+        "original_training_rows": original_training_rows or training_rows,
+        "sample_size": sample_size or 0,
     }
 
 

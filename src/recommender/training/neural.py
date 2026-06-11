@@ -223,7 +223,13 @@ def run_training_loop(
                 "epoch": float(epoch),
                 "train_loss": train_loss,
                 "validation_loss": validation_loss,
-            }
+            },
+        )
+
+        print(
+            f"Epoch {epoch}/{config.epochs} - "
+            f"train_loss={train_loss:.4f} - "
+            f"validation_loss={validation_loss:.4f}",
         )
 
         improved = validation_loss < best_validation_loss - config.min_delta

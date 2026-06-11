@@ -12,6 +12,7 @@ from recommender.training.neural import (
     train_neural_recommender,
     train_one_epoch,
 )
+from recommender.training.sampling import sample_training_data
 from recommender.training.split import (
     add_user_interaction_order,
     chronological_user_split,
@@ -33,4 +34,5 @@ __all__ = [
     "train_neural_recommender",
     "train_one_epoch",
     "validate_split_columns",
+    "sample_training_data",
 ]
