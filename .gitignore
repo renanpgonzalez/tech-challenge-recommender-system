@@ -210,3 +210,14 @@ data/external/*
 
 # Local model artifacts
 models/**/*.json
+
+# Local experiment outputs
+reports/*.json
+mlruns/
+
+# MLflow local database and artifacts
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+mlartifacts/
+mlruns/

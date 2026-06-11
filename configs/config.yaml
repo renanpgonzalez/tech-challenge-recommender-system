@@ -17,5 +17,5 @@ model:
   batch_size: 256
 
 mlflow:
-  tracking_uri: http://localhost:5000
+  tracking_uri: sqlite:///mlflow.db
   experiment_name: product-recommender

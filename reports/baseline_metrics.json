@@ -2,7 +2,5 @@
   "precision_at_k": 0.0,
   "recall_at_k": 0.0,
   "hit_rate_at_k": 0.0,
-  "coverage_at_k": 0.6,
-  "top_k": 5.0,
-  "evaluated_users": 2.0
+  "coverage_at_k": 0.6
 }

@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     reports_dir: Path = Field(default=Path("reports"), alias="REPORT_DIR")
 
     mlflow_tracking_uri: str = Field(
-        default="http://localhost:5000",
+        default="sqlite:///mlflow.db",
         alias="MLFLOW_TRACKING_URI",
     )
     mlflow_experiment_name: str = Field(
