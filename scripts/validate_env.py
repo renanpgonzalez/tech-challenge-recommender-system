@@ -2,7 +2,6 @@
 
 from importlib.metadata import version
 
-
 REQUIRED_PACKAGES = [
     "pandas",
     "numpy",
