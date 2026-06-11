@@ -1,0 +1,21 @@
+project:
+  name: tech-challenge-recommender-system
+  version: 0.1.0
+
+data:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+model:
+  random_seed: 42
+  test_size: 0.2
+  embedding_dim: 64
+  hidden_dim: 128
+  learning_rate: 0.001
+  epochs: 10
+  batch_size: 256
+
+mlflow:
+  tracking_uri: http://localhost:5000
+  experiment_name: product-recommender
