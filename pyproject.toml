@@ -17,7 +17,8 @@ dependencies = [
     "pydantic (>=2.13.4,<3.0.0)",
     "pydantic-settings (>=2.14.1,<3.0.0)",
     "python-dotenv (>=1.2.2,<2.0.0)",
-    "pyyaml (>=6.0.3,<7.0.0)"
+    "pyyaml (>=6.0.3,<7.0.0)",
+    "pyarrow (>=24.0.0,<25.0.0)"
 ]
 
 
@@ -56,3 +57,8 @@ line-ending = "auto"
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.poetry]
+packages = [
+    { include = "recommender", from = "src" },
+]
