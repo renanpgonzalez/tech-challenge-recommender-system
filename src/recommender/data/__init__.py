@@ -8,6 +8,13 @@ from recommender.data.preprocessing import (
     preprocess_interactions,
     validate_required_columns,
 )
+from recommender.data.retailrocket import (
+    RETAILROCKET_EVENTS_COLUMNS,
+    RETAILROCKET_REQUIRED_COLUMNS,
+    read_retailrocket_events,
+    standardize_retailrocket_events,
+    validate_retailrocket_events_columns,
+)
 from recommender.data.schema import (
     EVENT_TYPE_WEIGHTS,
     REQUIRED_INTERACTION_COLUMNS,
@@ -30,4 +37,9 @@ __all__ = [
     "read_dataframe",
     "validate_required_columns",
     "write_dataframe",
+    "RETAILROCKET_EVENTS_COLUMNS",
+    "RETAILROCKET_REQUIRED_COLUMNS",
+    "read_retailrocket_events",
+    "standardize_retailrocket_events",
+    "validate_retailrocket_events_columns",
 ]
