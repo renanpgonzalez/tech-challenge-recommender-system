@@ -207,3 +207,6 @@ data/external/*
 !data/interim/.gitkeep
 !data/processed/.gitkeep
 !data/external/.gitkeep
+
+# Local model artifacts
+models/**/*.json
