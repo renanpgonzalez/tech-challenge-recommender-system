@@ -1,5 +1,8 @@
 """PyTorch neural recommendation models."""
 
+from pathlib import Path
+from typing import Any
+
 import torch
 from torch import nn
 
@@ -70,3 +73,39 @@ class NeuralRecommender(nn.Module):
 
         with torch.no_grad():
             return self.forward(user_indices, item_indices)
+
+
+def load_neural_model(path: Path) -> tuple[NeuralRecommender, dict[str, Any]]:
+    """Load a saved neural recommender artifact.
+
+    Args:
+        path: Saved neural model artifact path.
+
+    Returns:
+        Loaded neural model and artifact metadata.
+    """
+    artifact: dict[str, Any] = torch.load(
+        path,
+        map_location="cpu",
+        weights_only=False,
+    )
+    state_dict = artifact["model_state_dict"]
+    config = artifact["config"]
+
+    num_users = int(
+        artifact.get("num_users", state_dict["user_embedding.weight"].shape[0]),
+    )
+    num_items = int(
+        artifact.get("num_items", state_dict["item_embedding.weight"].shape[0]),
+    )
+
+    model = NeuralRecommender(
+        num_users=num_users,
+        num_items=num_items,
+        embedding_dim=int(config["embedding_dim"]),
+        hidden_dim=int(config["hidden_dim"]),
+    )
+    model.load_state_dict(state_dict)
+    model.eval()
+
+    return model, artifact

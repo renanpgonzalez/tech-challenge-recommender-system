@@ -272,6 +272,8 @@ def save_neural_model(
     path.parent.mkdir(parents=True, exist_ok=True)
     artifact: dict[str, Any] = {
         "model_state_dict": model.state_dict(),
+        "num_users": model.user_embedding.num_embeddings,
+        "num_items": model.item_embedding.num_embeddings,
         "config": asdict(config),
         "result": asdict(result),
         "history": history,

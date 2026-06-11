@@ -15,6 +15,15 @@ from recommender.evaluation.metrics import (
     recall_at_k,
     validate_k,
 )
+from recommender.evaluation.neural import (
+    build_item_index_mapping,
+    build_neural_recommendations_by_user,
+    build_user_index_mapping,
+    evaluate_neural_recommender,
+    recommend_with_neural_reranking,
+    score_candidate_items,
+    select_evaluation_users,
+)
 
 __all__ = [
     "build_catalog_items",
@@ -28,4 +37,11 @@ __all__ = [
     "precision_at_k",
     "recall_at_k",
     "validate_k",
+    "build_item_index_mapping",
+    "build_neural_recommendations_by_user",
+    "build_user_index_mapping",
+    "evaluate_neural_recommender",
+    "recommend_with_neural_reranking",
+    "score_candidate_items",
+    "select_evaluation_users",
 ]
