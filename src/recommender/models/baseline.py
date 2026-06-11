@@ -110,10 +110,18 @@ class PopularityRecommender:
             Ranked item recommendations.
         """
         excluded_items = exclude_items or set()
+        recommendations: list[str] = []
 
-        return [item_id for item_id in self.top_items if item_id not in excluded_items][
-            :top_n
-        ]
+        for item_id in self.top_items:
+            if item_id in excluded_items:
+                continue
+
+            recommendations.append(item_id)
+
+            if len(recommendations) == top_n:
+                break
+
+        return recommendations
 
     def save(self, path: Path) -> None:
         """Save the recommender artifact as JSON.

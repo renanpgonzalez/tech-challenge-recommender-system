@@ -1,6 +1,6 @@
 {
-  "precision_at_k": 0.0,
-  "recall_at_k": 0.0,
-  "hit_rate_at_k": 0.0,
-  "coverage_at_k": 0.6
+  "precision_at_k": 0.00022660965794768615,
+  "recall_at_k": 0.002266096579476861,
+  "hit_rate_at_k": 0.002266096579476861,
+  "coverage_at_k": 0.00011009384399261931
 }
