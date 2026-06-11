@@ -6,6 +6,12 @@ from recommender.evaluation.baseline import (
     build_recommendations_by_user,
     evaluate_popularity_recommender,
 )
+from recommender.evaluation.comparison import (
+    ModelMetrics,
+    build_comparison_rows,
+    calculate_relative_difference,
+    select_winner,
+)
 from recommender.evaluation.metrics import (
     coverage_at_k,
     get_top_k_items,
@@ -44,4 +50,8 @@ __all__ = [
     "recommend_with_neural_reranking",
     "score_candidate_items",
     "select_evaluation_users",
+    "ModelMetrics",
+    "build_comparison_rows",
+    "calculate_relative_difference",
+    "select_winner",
 ]
