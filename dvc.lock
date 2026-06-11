@@ -1,0 +1,328 @@
+schema: '2.0'
+stages:
+  prepare_events:
+    cmd: python scripts/prepare_retailrocket_events.py --input-path
+      data/raw/retailrocket/events.csv --output-path
+      data/interim/retailrocket_events_standardized.parquet
+    deps:
+    - path: data/raw/retailrocket/events.csv
+      hash: md5
+      md5: fddaf7c1c6a9df23a726500a08ffdd7e
+      size: 94237913
+    - path: scripts/prepare_retailrocket_events.py
+      hash: md5
+      md5: 57916fdd77df862bf421a9af62662f40
+      size: 1429
+    - path: src/recommender/data/retailrocket.py
+      hash: md5
+      md5: 316933c62c59b9f8eb6c4c148a9f46f4
+      size: 1981
+    outs:
+    - path: data/interim/retailrocket_events_standardized.parquet
+      hash: md5
+      md5: 464986f9a0cf4a7d417e0d0c61db37e7
+      size: 37329185
+  preprocess:
+    cmd: python scripts/preprocess.py --input-path
+      data/interim/retailrocket_events_standardized.parquet --output-path
+      data/interim/retailrocket_events_preprocessed.parquet
+    deps:
+    - path: data/interim/retailrocket_events_standardized.parquet
+      hash: md5
+      md5: 464986f9a0cf4a7d417e0d0c61db37e7
+      size: 37329185
+    - path: scripts/preprocess.py
+      hash: md5
+      md5: 63c5541fff9a8c7c78e5c1bc05fecadd
+      size: 1294
+    - path: src/recommender/data/preprocessing.py
+      hash: md5
+      md5: 79c95ca346ce8d229cdb58326f069028
+      size: 2714
+    - path: src/recommender/data/schema.py
+      hash: md5
+      md5: 4165b34996d3ecde660c8eaf5bddd852
+      size: 1432
+    outs:
+    - path: data/interim/retailrocket_events_preprocessed.parquet
+      hash: md5
+      md5: c45a8efa02157c267fcfd27f46922787
+      size: 37575263
+  split:
+    cmd: python scripts/split_data.py --input-path
+      data/interim/retailrocket_events_preprocessed.parquet --train-output-path
+      data/interim/train_interactions.parquet --test-output-path
+      data/interim/test_interactions.parquet
+    deps:
+    - path: data/interim/retailrocket_events_preprocessed.parquet
+      hash: md5
+      md5: c45a8efa02157c267fcfd27f46922787
+      size: 37575263
+    - path: scripts/split_data.py
+      hash: md5
+      md5: 24d706047b231c7f8e4a4ccca7294f94
+      size: 2108
+    - path: src/recommender/training/split.py
+      hash: md5
+      md5: d64f3b008c21b616abc4131fa8c769b4
+      size: 2708
+    outs:
+    - path: data/interim/test_interactions.parquet
+      hash: md5
+      md5: 685f7df1d60e8ccda50d2063f0e3ffd9
+      size: 6316182
+    - path: data/interim/train_interactions.parquet
+      hash: md5
+      md5: 93c3a38e051f33232c2348cb7dbe80fc
+      size: 31548419
+  features_train:
+    cmd: python scripts/feature_engineering.py --input-path
+      data/interim/train_interactions.parquet --output-path
+      data/processed/train_features.parquet --mapping-output-path
+      models/feature_mappings.json
+    deps:
+    - path: data/interim/train_interactions.parquet
+      hash: md5
+      md5: 93c3a38e051f33232c2348cb7dbe80fc
+      size: 31548419
+    - path: scripts/feature_engineering.py
+      hash: md5
+      md5: 94380d975e5c04357d50e2a608c4707b
+      size: 3180
+    - path: src/recommender/features/engineering.py
+      hash: md5
+      md5: f5dba058ce4d1ec8dd0099aad1332af3
+      size: 6881
+    outs:
+    - path: data/processed/train_features.parquet
+      hash: md5
+      md5: c4fd3b2bef70d9e76d8934934374dc7a
+      size: 42450061
+    - path: models/feature_mappings.json
+      hash: md5
+      md5: ced15b9dd3a4b65d664ef9ac85e7a828
+      size: 38024888
+  features_test:
+    cmd: python scripts/feature_engineering.py --input-path
+      data/interim/test_interactions.parquet --output-path
+      data/processed/test_features.parquet --mapping-input-path
+      models/feature_mappings.json --drop-unknown
+    deps:
+    - path: data/interim/test_interactions.parquet
+      hash: md5
+      md5: 685f7df1d60e8ccda50d2063f0e3ffd9
+      size: 6316182
+    - path: models/feature_mappings.json
+      hash: md5
+      md5: ced15b9dd3a4b65d664ef9ac85e7a828
+      size: 38024888
+    - path: scripts/feature_engineering.py
+      hash: md5
+      md5: 94380d975e5c04357d50e2a608c4707b
+      size: 3180
+    - path: src/recommender/features/engineering.py
+      hash: md5
+      md5: f5dba058ce4d1ec8dd0099aad1332af3
+      size: 6881
+    outs:
+    - path: data/processed/test_features.parquet
+      hash: md5
+      md5: 261e56e9c216a5fc7ddb21159c5ede7d
+      size: 9291832
+  baseline_experiment:
+    cmd: python scripts/run_baseline_experiment.py --train-path
+      data/processed/train_features.parquet --test-path
+      data/processed/test_features.parquet --model-output-path
+      models/baseline/popularity_model.json --metrics-output-path
+      reports/baseline_metrics.json --top-k 10 --tracking-uri
+      sqlite:///mlflow.db --experiment-name product-recommender
+    deps:
+    - path: data/processed/test_features.parquet
+      hash: md5
+      md5: 261e56e9c216a5fc7ddb21159c5ede7d
+      size: 9291832
+    - path: data/processed/train_features.parquet
+      hash: md5
+      md5: c4fd3b2bef70d9e76d8934934374dc7a
+      size: 42450061
+    - path: scripts/run_baseline_experiment.py
+      hash: md5
+      md5: 0dd0adc6fda51b07b161dbb2a3d7438e
+      size: 4365
+    - path: src/recommender/evaluation/baseline.py
+      hash: md5
+      md5: de9e39f728ebf710999993755dfaa118
+      size: 3450
+    - path: src/recommender/evaluation/metrics.py
+      hash: md5
+      md5: 4c09517d598b8344cef6162fdfad041a
+      size: 5201
+    - path: src/recommender/models/baseline.py
+      hash: md5
+      md5: 1530edb957059b60b175068460427b33
+      size: 4553
+    - path: src/recommender/tracking/mlflow.py
+      hash: md5
+      md5: b17d221e31a229d5cf1d120ef711c874
+      size: 1229
+    params:
+      params.yaml:
+        evaluation.top_k: 10
+        mlflow.experiment_name: product-recommender
+        mlflow.tracking_uri: sqlite:///mlflow.db
+    outs:
+    - path: models/baseline/popularity_model.json
+      hash: md5
+      md5: db6f6791a3865cda44d094df0540d557
+      size: 7894191
+    - path: reports/baseline_metrics.json
+      hash: md5
+      md5: 60a245ea1f0bf92aa5b4cf3a11ed0c4e
+      size: 174
+  neural_experiment:
+    cmd: python scripts/run_neural_experiment.py --train-path
+      data/processed/train_features.parquet --model-output-path
+      models/neural/neural_recommender.pt --metrics-output-path
+      reports/neural_train_metrics.json --history-output-path
+      reports/neural_train_history.json --epochs 2 --batch-size 8192
+      --embedding-dim 8 --hidden-dim 16 --learning-rate 0.001 --sample-size
+      200000 --tracking-uri sqlite:///mlflow.db --experiment-name
+      product-recommender --run-name neural_recommender_dvc
+    deps:
+    - path: data/processed/train_features.parquet
+      hash: md5
+      md5: c4fd3b2bef70d9e76d8934934374dc7a
+      size: 42450061
+    - path: scripts/run_neural_experiment.py
+      hash: md5
+      md5: 500ce393ed97db64ff90b2e239a75d6b
+      size: 5737
+    - path: src/recommender/models/neural.py
+      hash: md5
+      md5: 14c0c5ac87d5b632cffffecc6edf0881
+      size: 3142
+    - path: src/recommender/tracking/mlflow.py
+      hash: md5
+      md5: b17d221e31a229d5cf1d120ef711c874
+      size: 1229
+    - path: src/recommender/tracking/neural.py
+      hash: md5
+      md5: fe628d2a378cbeb9eb5b7b4b68f6b85f
+      size: 2360
+    - path: src/recommender/training/dataset.py
+      hash: md5
+      md5: 0767cb374debfddc49c2eb52658dc7d3
+      size: 1892
+    - path: src/recommender/training/neural.py
+      hash: md5
+      md5: 085155cfed0193d9e7636c2d98b0e22e
+      size: 8042
+    - path: src/recommender/training/sampling.py
+      hash: md5
+      md5: 4f325b29b7b261dfb29efff1fbd3893e
+      size: 818
+    params:
+      params.yaml:
+        mlflow.experiment_name: product-recommender
+        mlflow.tracking_uri: sqlite:///mlflow.db
+        neural.batch_size: 8192
+        neural.embedding_dim: 8
+        neural.epochs: 2
+        neural.hidden_dim: 16
+        neural.learning_rate: 0.001
+        neural.sample_size: 200000
+    outs:
+    - path: models/neural/neural_recommender.pt
+      hash: md5
+      md5: 1e2ae35a541ece0cd9e11c2e87c6c8eb
+      size: 52313689
+    - path: reports/neural_train_history.json
+      hash: md5
+      md5: d103e228a61fc80e09bd07fabd78b430
+      size: 226
+    - path: reports/neural_train_metrics.json
+      hash: md5
+      md5: 69645dd6c751bae663dcee975355c04e
+      size: 330
+  neural_evaluation:
+    cmd: python scripts/evaluate_neural.py --train-path
+      data/processed/train_features.parquet --test-path
+      data/processed/test_features.parquet --model-path
+      models/neural/neural_recommender.pt --baseline-model-path
+      models/baseline/popularity_model.json --metrics-output-path
+      reports/neural_eval_metrics.json --top-k 10 --candidate-size 100
+      --max-users 10000
+    deps:
+    - path: data/processed/test_features.parquet
+      hash: md5
+      md5: 261e56e9c216a5fc7ddb21159c5ede7d
+      size: 9291832
+    - path: data/processed/train_features.parquet
+      hash: md5
+      md5: c4fd3b2bef70d9e76d8934934374dc7a
+      size: 42450061
+    - path: models/baseline/popularity_model.json
+      hash: md5
+      md5: db6f6791a3865cda44d094df0540d557
+      size: 7894191
+    - path: models/neural/neural_recommender.pt
+      hash: md5
+      md5: 1e2ae35a541ece0cd9e11c2e87c6c8eb
+      size: 52313689
+    - path: scripts/evaluate_neural.py
+      hash: md5
+      md5: b347278971151548c2167f1a7550e9ef
+      size: 3561
+    - path: src/recommender/evaluation/metrics.py
+      hash: md5
+      md5: 4c09517d598b8344cef6162fdfad041a
+      size: 5201
+    - path: src/recommender/evaluation/neural.py
+      hash: md5
+      md5: 18ebf3363a2dfc5963e5c2e3672612b8
+      size: 7230
+    - path: src/recommender/models/baseline.py
+      hash: md5
+      md5: 1530edb957059b60b175068460427b33
+      size: 4553
+    - path: src/recommender/models/neural.py
+      hash: md5
+      md5: 14c0c5ac87d5b632cffffecc6edf0881
+      size: 3142
+    params:
+      params.yaml:
+        evaluation.candidate_size: 100
+        evaluation.max_users: 10000
+        evaluation.top_k: 10
+    outs:
+    - path: reports/neural_eval_metrics.json
+      hash: md5
+      md5: 35b4e7d04059b5334976d37beb019703
+      size: 200
+  compare_models:
+    cmd: python scripts/compare_models.py --baseline-metrics-path
+      reports/baseline_metrics.json --neural-metrics-path
+      reports/neural_eval_metrics.json --output-path
+      reports/model_comparison_dvc.md
+    deps:
+    - path: reports/baseline_metrics.json
+      hash: md5
+      md5: 60a245ea1f0bf92aa5b4cf3a11ed0c4e
+      size: 174
+    - path: reports/neural_eval_metrics.json
+      hash: md5
+      md5: 35b4e7d04059b5334976d37beb019703
+      size: 200
+    - path: scripts/compare_models.py
+      hash: md5
+      md5: d503d90d99e09f693c913bf59a8fdeeb
+      size: 4463
+    - path: src/recommender/evaluation/comparison.py
+      hash: md5
+      md5: 94af5eac654c723ae897bedbda1c4431
+      size: 2667
+    outs:
+    - path: reports/model_comparison_dvc.md
+      hash: md5
+      md5: 26070b9e93f1fb4ffa4dd2a56768f9e4
+      size: 1230

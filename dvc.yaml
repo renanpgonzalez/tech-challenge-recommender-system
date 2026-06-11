@@ -1,0 +1,175 @@
+stages:
+  prepare_events:
+    cmd: >-
+      python scripts/prepare_retailrocket_events.py
+      --input-path data/raw/retailrocket/events.csv
+      --output-path data/interim/retailrocket_events_standardized.parquet
+    deps:
+      - data/raw/retailrocket/events.csv
+      - scripts/prepare_retailrocket_events.py
+      - src/recommender/data/retailrocket.py
+    outs:
+      - data/interim/retailrocket_events_standardized.parquet
+
+  preprocess:
+    cmd: >-
+      python scripts/preprocess.py
+      --input-path data/interim/retailrocket_events_standardized.parquet
+      --output-path data/interim/retailrocket_events_preprocessed.parquet
+    deps:
+      - data/interim/retailrocket_events_standardized.parquet
+      - scripts/preprocess.py
+      - src/recommender/data/preprocessing.py
+      - src/recommender/data/schema.py
+    outs:
+      - data/interim/retailrocket_events_preprocessed.parquet
+
+  split:
+    cmd: >-
+      python scripts/split_data.py
+      --input-path data/interim/retailrocket_events_preprocessed.parquet
+      --train-output-path data/interim/train_interactions.parquet
+      --test-output-path data/interim/test_interactions.parquet
+    deps:
+      - data/interim/retailrocket_events_preprocessed.parquet
+      - scripts/split_data.py
+      - src/recommender/training/split.py
+    outs:
+      - data/interim/train_interactions.parquet
+      - data/interim/test_interactions.parquet
+
+  features_train:
+    cmd: >-
+      python scripts/feature_engineering.py
+      --input-path data/interim/train_interactions.parquet
+      --output-path data/processed/train_features.parquet
+      --mapping-output-path models/feature_mappings.json
+    deps:
+      - data/interim/train_interactions.parquet
+      - scripts/feature_engineering.py
+      - src/recommender/features/engineering.py
+    outs:
+      - data/processed/train_features.parquet
+      - models/feature_mappings.json
+
+  features_test:
+    cmd: >-
+      python scripts/feature_engineering.py
+      --input-path data/interim/test_interactions.parquet
+      --output-path data/processed/test_features.parquet
+      --mapping-input-path models/feature_mappings.json
+      --drop-unknown
+    deps:
+      - data/interim/test_interactions.parquet
+      - models/feature_mappings.json
+      - scripts/feature_engineering.py
+      - src/recommender/features/engineering.py
+    outs:
+      - data/processed/test_features.parquet
+
+  baseline_experiment:
+    cmd: >-
+      python scripts/run_baseline_experiment.py
+      --train-path data/processed/train_features.parquet
+      --test-path data/processed/test_features.parquet
+      --model-output-path models/baseline/popularity_model.json
+      --metrics-output-path reports/baseline_metrics.json
+      --top-k ${evaluation.top_k}
+      --tracking-uri ${mlflow.tracking_uri}
+      --experiment-name ${mlflow.experiment_name}
+    deps:
+      - data/processed/train_features.parquet
+      - data/processed/test_features.parquet
+      - scripts/run_baseline_experiment.py
+      - src/recommender/models/baseline.py
+      - src/recommender/evaluation/baseline.py
+      - src/recommender/evaluation/metrics.py
+      - src/recommender/tracking/mlflow.py
+    params:
+      - evaluation.top_k
+      - mlflow.tracking_uri
+      - mlflow.experiment_name
+    outs:
+      - models/baseline/popularity_model.json
+      - reports/baseline_metrics.json
+
+  neural_experiment:
+    cmd: >-
+      python scripts/run_neural_experiment.py
+      --train-path data/processed/train_features.parquet
+      --model-output-path models/neural/neural_recommender.pt
+      --metrics-output-path reports/neural_train_metrics.json
+      --history-output-path reports/neural_train_history.json
+      --epochs ${neural.epochs}
+      --batch-size ${neural.batch_size}
+      --embedding-dim ${neural.embedding_dim}
+      --hidden-dim ${neural.hidden_dim}
+      --learning-rate ${neural.learning_rate}
+      --sample-size ${neural.sample_size}
+      --tracking-uri ${mlflow.tracking_uri}
+      --experiment-name ${mlflow.experiment_name}
+      --run-name neural_recommender_dvc
+    deps:
+      - data/processed/train_features.parquet
+      - scripts/run_neural_experiment.py
+      - src/recommender/models/neural.py
+      - src/recommender/training/neural.py
+      - src/recommender/training/dataset.py
+      - src/recommender/training/sampling.py
+      - src/recommender/tracking/neural.py
+      - src/recommender/tracking/mlflow.py
+    params:
+      - neural.epochs
+      - neural.batch_size
+      - neural.embedding_dim
+      - neural.hidden_dim
+      - neural.learning_rate
+      - neural.sample_size
+      - mlflow.tracking_uri
+      - mlflow.experiment_name
+    outs:
+      - models/neural/neural_recommender.pt
+      - reports/neural_train_metrics.json
+      - reports/neural_train_history.json
+
+  neural_evaluation:
+    cmd: >-
+      python scripts/evaluate_neural.py
+      --train-path data/processed/train_features.parquet
+      --test-path data/processed/test_features.parquet
+      --model-path models/neural/neural_recommender.pt
+      --baseline-model-path models/baseline/popularity_model.json
+      --metrics-output-path reports/neural_eval_metrics.json
+      --top-k ${evaluation.top_k}
+      --candidate-size ${evaluation.candidate_size}
+      --max-users ${evaluation.max_users}
+    deps:
+      - data/processed/train_features.parquet
+      - data/processed/test_features.parquet
+      - models/neural/neural_recommender.pt
+      - models/baseline/popularity_model.json
+      - scripts/evaluate_neural.py
+      - src/recommender/evaluation/neural.py
+      - src/recommender/evaluation/metrics.py
+      - src/recommender/models/neural.py
+      - src/recommender/models/baseline.py
+    params:
+      - evaluation.top_k
+      - evaluation.candidate_size
+      - evaluation.max_users
+    outs:
+      - reports/neural_eval_metrics.json
+
+  compare_models:
+    cmd: >-
+      python scripts/compare_models.py
+      --baseline-metrics-path reports/baseline_metrics.json
+      --neural-metrics-path reports/neural_eval_metrics.json
+      --output-path reports/model_comparison_dvc.md
+    deps:
+      - reports/baseline_metrics.json
+      - reports/neural_eval_metrics.json
+      - scripts/compare_models.py
+      - src/recommender/evaluation/comparison.py
+    outs:
+      - reports/model_comparison_dvc.md

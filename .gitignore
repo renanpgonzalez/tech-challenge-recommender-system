@@ -236,3 +236,6 @@ mlflow.db-shm
 mlflow.db-wal
 mlartifacts/
 mlruns/
+
+# DVC generated report
+reports/model_comparison_dvc.md
