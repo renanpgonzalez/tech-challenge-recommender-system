@@ -64,8 +64,11 @@ def rank_items_by_popularity(data: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+from recommender.models.base import BaseRecommender
+
+
 @dataclass
-class PopularityRecommender:
+class PopularityRecommender(BaseRecommender):
     """Popularity-based recommendation baseline."""
 
     top_items: list[str] = field(default_factory=list)
