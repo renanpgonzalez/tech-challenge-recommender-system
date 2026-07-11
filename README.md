@@ -14,7 +14,7 @@ O objetivo do projeto é desenvolver, testar, rastrear e versionar um sistema de
 
 Como exigido pelas diretrizes de avaliação da FIAP, o vídeo explicativo do projeto está disponível no link abaixo:
 
-* **Link do Vídeo**: [Clique aqui para assistir ao vídeo de apresentação](https://example.com) *(Por favor, substitua por seu link de gravação do Loom/YouTube/Drive)*
+* **Link do Vídeo**: [Clique aqui para assistir ao vídeo de apresentação](https://example.com) *(TODO)*
 * **Estrutura de Apresentação (STAR)**:
   - **Situação (Situation)**: O problema de negócio no e-commerce e o contexto do dataset da RetailRocket.
   - **Tarefa (Task)**: Os requisitos de MLOps, rastreamento de experimentos, reprodutibilidade e conformidade com arquitetura de software limpa.
@@ -152,7 +152,11 @@ MLFLOW_EXPERIMENT_NAME=product-recommender
 
 ## 9. Configuração de Dados
 
-Os dados originais do RetailRocket devem ser colocados em:
+O dataset original da RetailRocket pode ser baixado publicamente no Kaggle:
+* **Link para Download**: [Kaggle - Retailrocket eCommerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset)
+
+Após baixar e descompactar o arquivo `.zip`, coloque o arquivo `events.csv` na seguinte estrutura de diretórios do projeto:
+
 ```text
 data/raw/retailrocket/events.csv
 ```
