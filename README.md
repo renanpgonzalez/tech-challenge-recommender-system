@@ -19,6 +19,17 @@ The solution was built as a Machine Learning Engineering pipeline, covering:
 
 The project uses the RetailRocket e-commerce dataset and focuses on recommending products based on user behavior events such as product views, cart additions and transactions.
 
+### 1.1. Presentation Video (STAR Method)
+
+As required by the Phase 2 Capstone/Tech Challenge evaluation guidelines, the project explanation and demonstration video (maximum 5 minutes) is available at:
+
+* **Video Link**: [Click here to watch the presentation video](https://example.com) *(Please replace this with your recorded Loom/YouTube/Drive link)*
+* **Presentation Structure**: The video follows the STAR methodology:
+  - **Situation**: Business problem and RetailRocket dataset context.
+  - **Task**: MLOps, reproducibility, and architectural requirements.
+  - **Action**: Design patterns, DVC pipelines, MLflow logging, and multi-stage Docker.
+  - **Result**: Ranking metrics comparisons, Model Card review, and test validations.
+
 ## 2. Business Problem
 
 An e-commerce company wants to improve product discovery by recommending relevant items to users based on previous navigation and interaction behavior.
@@ -188,13 +199,20 @@ The raw RetailRocket events dataset should be available at:
 data/raw/retailrocket/events.csv
 ```
 
-If using DVC with the configured remote, restore data with:
+By default, the DVC remote is configured to save cached files locally in the workspace folder `dvc-storage/tech-challenge-recommender-system` (as defined in `.dvc/config`).
 
-```bash
-poetry run dvc pull
-```
+Because this remote points to a local directory, cloning the repository to a new machine means `poetry run dvc pull` will report missing cache files. 
 
-If the DVC remote is not available, manually download the RetailRocket dataset and place `events.csv` in the expected path.
+To set up the dataset and generate the DVC cache locally:
+1. Download the RetailRocket dataset and place `events.csv` (along with properties if needed) inside the `data/raw/retailrocket/` folder.
+2. Run the DVC pipeline to process the data, train the models, and run evaluations:
+   ```bash
+   poetry run dvc repro
+   ```
+3. Sometime after the run completes successfully, push the newly generated files to your local `dvc-storage` remote to keep the cache in sync:
+   ```bash
+   poetry run dvc push
+   ```
 
 ## 10. Reproducible Pipeline with DVC
 
