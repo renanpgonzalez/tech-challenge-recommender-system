@@ -1,183 +1,140 @@
-# Tech Challenge Fase 02 — Product Recommendation System
+# Sistema de Recomendação de Produtos — RetailRocket
 
-## 1. Project Overview
+Este repositório contém a entrega do trabalho de conclusão da **Fase 02** da pós-graduação **FIAP Pós Tech em Machine Learning Engineering**.
 
-This project implements a product recommendation system for an e-commerce scenario using user-item interaction data.
+O objetivo do projeto é desenvolver, testar, rastrear e versionar um sistema de recomendação de produtos utilizando dados de comportamento implícito (implicit feedback) de e-commerce da plataforma RetailRocket.
 
-The solution was built as a Machine Learning Engineering pipeline, covering:
+---
 
-* data ingestion;
-* preprocessing;
-* feature engineering;
-* baseline recommendation model;
-* neural recommender with PyTorch;
-* recommendation metrics;
-* experiment tracking with MLflow;
-* data and pipeline versioning with DVC;
-* Docker-based execution environment;
-* MLflow Model Registry.
+## 🔗 Links Oficiais do Projeto
 
-The project uses the RetailRocket e-commerce dataset and focuses on recommending products based on user behavior events such as product views, cart additions and transactions.
+* **Documento de Entrega Detalhado**: [entrega-tech-challenge-grupo17.md](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/entrega-tech-challenge-grupo17.md)
 
-### 1.1. Presentation Video (STAR Method)
+### 1.1. Apresentação do Projeto (Método STAR)
 
-As required by the Phase 2 Capstone/Tech Challenge evaluation guidelines, the project explanation and demonstration video (maximum 5 minutes) is available at:
+Como exigido pelas diretrizes de avaliação da FIAP, o vídeo explicativo do projeto está disponível no link abaixo:
 
-* **Video Link**: [Click here to watch the presentation video](https://example.com) *(Please replace this with your recorded Loom/YouTube/Drive link)*
-* **Presentation Structure**: The video follows the STAR methodology:
-  - **Situation**: Business problem and RetailRocket dataset context.
-  - **Task**: MLOps, reproducibility, and architectural requirements.
-  - **Action**: Design patterns, DVC pipelines, MLflow logging, and multi-stage Docker.
-  - **Result**: Ranking metrics comparisons, Model Card review, and test validations.
+* **Link do Vídeo**: [Clique aqui para assistir ao vídeo de apresentação](https://example.com) *(Por favor, substitua por seu link de gravação do Loom/YouTube/Drive)*
+* **Estrutura de Apresentação (STAR)**:
+  - **Situação (Situation)**: O problema de negócio no e-commerce e o contexto do dataset da RetailRocket.
+  - **Tarefa (Task)**: Os requisitos de MLOps, rastreamento de experimentos, reprodutibilidade e conformidade com arquitetura de software limpa.
+  - **Ação (Action)**: A modelagem PyTorch, o pipeline reprodutível DVC, os testes de CI com GitHub Actions e o provisionamento com Terraform na AWS.
+  - **Resultado (Result)**: Comparação de métricas offline (Hit Rate, Coverage), análise do Model Card e validação do ambiente.
 
-## 2. Business Problem
+---
 
-An e-commerce company wants to improve product discovery by recommending relevant items to users based on previous navigation and interaction behavior.
+## 1. Visão Geral do Projeto
 
-The recommendation task is based on implicit feedback. Instead of explicit ratings, the system uses behavioral events:
+O projeto entrega um fluxo completo de engenharia de machine learning (MLOps) composto por:
+* Processamento de dados robusto e padronizado;
+* Engenharia de recursos (feature engineering) para interações usuário-item;
+* Divisão temporal de dados (train-test split);
+* Modelo baseline de popularidade;
+* Recomendador de deep learning baseado em PyTorch;
+* Avaliação comparativa utilizando métricas de ranking (Precision@K, Recall@K, Hit Rate@K, Catalog Coverage@K);
+* Rastreamento de logs e parâmetros com MLflow;
+* Controle e versionamento de dados e pipelines com DVC;
+* Ambiente de desenvolvimento e execução isolado via Docker;
+* Registro de modelos e promoção automática com MLflow Model Registry;
+* Provisionamento de infraestrutura AWS com Terraform (IaC);
+* Esteiras de CI/CD automatizadas via GitHub Actions.
 
-* `view`;
-* `addtocart`;
-* `transaction`.
+---
 
-These events are transformed into weighted interaction scores and used to train recommendation models.
+## 2. Problema de Negócio
 
-## 3. Dataset
+Uma plataforma de e-commerce deseja melhorar a descoberta de produtos para os seus clientes, recomendando produtos de alto interesse com base no seu comportamento histórico.
 
-The project uses the RetailRocket e-commerce dataset.
+Dado que não existem avaliações explícitas (estrelas ou notas), o sistema consome dados de feedback implícito através de interações:
+* `view` (visualizações de produtos);
+* `addtocart` (adições ao carrinho);
+* `transaction` (compras concluídas).
 
-Main file used in V1:
+---
 
-```text
-data/raw/retailrocket/events.csv
-```
+## 3. Conjunto de Dados (Dataset)
 
-Original columns:
+Utilizou-se o dataset público **RetailRocket**, que mapeia o comportamento de navegação de usuários reais.
+O dataset bruto é composto por interações sequenciais com carimbos de data/hora (timestamps).
 
-```text
-timestamp
-visitorid
-event
-itemid
-transactionid
-```
+---
 
-Internal standardized schema:
+## 4. Estratégia de Ponderação de Eventos
 
-```text
-timestamp
-user_id
-event_type
-item_id
-```
+Para traduzir as ações implícitas em um score de afinidade contínuo, aplicou-se a seguinte ponderação:
 
-Only `events.csv` is used in the V1 pipeline. Other RetailRocket files, such as `category_tree.csv` and `item_properties`, were kept as future improvement opportunities.
+* **Visualização (`view`)**: Peso `1.0` (indica interesse básico).
+* **Adição ao Carrinho (`addtocart`)**: Peso `3.0` (indica intenção de compra).
+* **Compra (`transaction`)**: Peso `5.0` (indica decisão final de compra).
 
-### Processed Volume
+As interações repetidas por usuário e item são somadas, gerando o atributo `interaction_score`.
 
-After preprocessing and feature engineering, the V1 pipeline produced approximately:
+---
 
-| Step                      |      Rows |
-| ------------------------- | --------: |
-| Preprocessed interactions | 2,756,101 |
-| Train interactions        | 2,350,081 |
-| Test interactions         |   406,020 |
-| Train feature rows        | 1,930,311 |
-| Test feature rows         |   397,600 |
+## 5. Estrutura do Projeto
 
-## 4. Event Weighting Strategy
-
-The dataset contains implicit feedback events. To represent different levels of user intent, each event type receives a weight:
-
-| Event Type    | Weight |
-| ------------- | -----: |
-| `view`        |    1.0 |
-| `addtocart`   |    3.0 |
-| `transaction` |    5.0 |
-
-The weighted score is aggregated by `user_id` and `item_id` during feature engineering.
-
-## 5. Project Structure
+A organização de pastas segue os padrões de Clean Code e Modularidade recomendados:
 
 ```text
-tech-challenge-recommender-system/
-├── configs/
-├── data/
-│   ├── raw/
-│   ├── interim/
-│   ├── processed/
-│   └── external/
-├── models/
-│   ├── baseline/
-│   └── neural/
-├── reports/
-│   ├── figures/
-│   └── model_card.md
-├── scripts/
-├── src/
+├── .github/workflows/       # Workflows automatizados de CI/CD (GitHub Actions)
+├── configs/                 # Configurações do ambiente de desenvolvimento
+├── context/                 # PDFs de suporte das disciplinas e do desafio
+├── data/                    # Dados (ignorado no Git, versionado no DVC)
+│   ├── raw/                 # Dados brutos de entrada
+│   ├── interim/             # Dados em processamento intermediário
+│   └── processed/           # Dados de treino e teste finais
+├── dvc-storage/             # Cache local de armazenamento do DVC
+├── models/                  # Artefatos locais de modelos salvos
+├── reports/                 # Relatórios de performance e Model Cards
+├── scripts/                 # Scripts Python executáveis de orquestração do pipeline
+├── src/                     # Código fonte modular empacotado
 │   └── recommender/
-│       ├── config/
-│       ├── data/
-│       ├── evaluation/
-│       ├── features/
-│       ├── models/
-│       ├── tracking/
-│       └── training/
-├── tests/
-├── Dockerfile
-├── docker-compose.yml
-├── dvc.yaml
-├── dvc.lock
-├── params.yaml
-├── pyproject.toml
-├── poetry.lock
-├── .env.example
-├── .gitignore
-├── .dockerignore
-└── .pre-commit-config.yaml
+│       ├── data/            # Carregamento e leitura de dados
+│       ├── features/        # Engenharia de recursos
+│       ├── training/        # Loops de treinamento de modelos
+│       ├── evaluation/      # Métricas e rotinas de teste de ranking
+│       ├── tracking/        # Helpers de MLflow e promoção de modelos
+│       └── models/          # Classes de modelos (Baseline, PyTorch, Factory)
+├── terraform/               # Códigos IaC para provisionamento AWS
+├── pyproject.toml           # Configurações de dependências do Poetry
+└── docker-compose.yml       # Orquestração local do MLflow e treinamento
 ```
 
-## 6. Main Technologies
+---
 
-| Area                         | Tools                     |
-| ---------------------------- | ------------------------- |
-| Language                     | Python 3.12               |
-| Dependency management        | Poetry                    |
-| Data processing              | pandas, pyarrow           |
-| Machine Learning             | PyTorch, Scikit-Learn     |
-| Experiment tracking          | MLflow                    |
-| Data and pipeline versioning | DVC                       |
-| Testing                      | pytest                    |
-| Code quality                 | Ruff, pre-commit          |
-| Containerization             | Docker, Docker Compose    |
-| Configuration                | Pydantic Settings, `.env` |
+## 6. Principais Tecnologias
 
-## 7. Installation
+* **Python 3.12**: Linguagem base estável.
+* **Poetry**: Gerenciamento de dependências rigoroso e do ambiente virtual.
+* **PyTorch**: Framework de Deep Learning para a rede neural.
+* **DVC (Data Version Control)**: Versionamento de dados e estruturação das fases de ML.
+* **MLflow**: Rastreamento de parâmetros, métricas e centralização de Model Registry.
+* **Docker & Docker Compose**: Garantia de portabilidade de ambientes.
+* **Terraform**: Provisionamento IaC para deploy AWS.
+* **Pytest & Ruff**: Testes de código e garantia de estilo limpo.
 
-### 7.1. Clone the repository
+---
 
-```bash
-git clone <repository-url>
-cd tech-challenge-recommender-system
-```
+## 7. Instalação Local
 
-### 7.2. Install dependencies
+1. Instale o Poetry (caso não tenha instalado):
+   ```bash
+   pip install poetry
+   ```
+2. Clone o repositório e instale as dependências:
+   ```bash
+   poetry install
+   ```
+3. Ative o ambiente virtual:
+   ```bash
+   poetry shell
+   ```
 
-```bash
-poetry install
-```
+---
 
-### 7.3. Validate the environment
+## 8. Variáveis de Ambiente
 
-```bash
-poetry run python scripts/validate_env.py
-```
-
-## 8. Environment Variables
-
-Create a `.env` file based on `.env.example`.
-
-Example:
+Crie um arquivo `.env` na raiz do projeto com base no arquivo de exemplo `.env.example`:
 
 ```env
 APP_ENV=development
@@ -191,70 +148,58 @@ MLFLOW_TRACKING_URI=sqlite:///mlflow.db
 MLFLOW_EXPERIMENT_NAME=product-recommender
 ```
 
-## 9. Data Setup
+---
 
-The raw RetailRocket events dataset should be available at:
+## 9. Configuração de Dados
 
+Os dados originais do RetailRocket devem ser colocados em:
 ```text
 data/raw/retailrocket/events.csv
 ```
 
-By default, the DVC remote is configured to save cached files locally in the workspace folder `dvc-storage/tech-challenge-recommender-system` (as defined in `.dvc/config`).
+### 9.1. Funcionamento do Cache do DVC
+O remote do DVC está configurado para salvar o cache de forma local na pasta `dvc-storage/tech-challenge-recommender-system`. 
 
-Because this remote points to a local directory, cloning the repository to a new machine means `poetry run dvc pull` will report missing cache files. 
+Por essa razão, ao realizar um clone limpo, o comando `poetry run dvc pull` informará que não existem dados no remote do Git.
 
-To set up the dataset and generate the DVC cache locally:
-1. Download the RetailRocket dataset and place `events.csv` (along with properties if needed) inside the `data/raw/retailrocket/` folder.
-2. Run the DVC pipeline to process the data, train the models, and run evaluations:
+Para recriar o pipeline e construir seu cache DVC local:
+1. Baixe o dataset da RetailRocket e salve o arquivo `events.csv` na pasta `data/raw/retailrocket/`.
+2. Rode o pipeline para processar e treinar:
    ```bash
    poetry run dvc repro
    ```
-3. Sometime after the run completes successfully, push the newly generated files to your local `dvc-storage` remote to keep the cache in sync:
+3. Execute o push para sincronizar o cache DVC local:
    ```bash
    poetry run dvc push
    ```
 
-## 10. Reproducible Pipeline with DVC
+---
 
-The project uses DVC to define and reproduce the complete ML pipeline.
+## 10. Pipeline Reprodutível com DVC
 
-Pipeline stages:
+O pipeline é composto por 9 etapas orquestradas pelo `dvc.yaml`:
 
 ```text
-prepare_events
-preprocess
-split
-features_train
-features_test
-baseline_experiment
-neural_experiment
-neural_evaluation
-compare_models
+prepare_events → preprocess → split_data → feature_engineering
+→ train_baseline → evaluate_baseline → train_neural
+→ evaluate_neural → compare_models
 ```
 
-To reproduce the full pipeline:
-
+Para rodar todo o pipeline sequencialmente:
 ```bash
 poetry run dvc repro
 ```
 
-To check pipeline status:
-
+Para verificar o status das etapas do pipeline:
 ```bash
 poetry run dvc status
 ```
 
-To push DVC artifacts to the configured remote:
+---
 
-```bash
-poetry run dvc push
-```
+## 11. Parâmetros do Pipeline
 
-## 11. Pipeline Parameters
-
-Main parameters are stored in `params.yaml`.
-
-Example:
+Todos os parâmetros globais estão contidos no arquivo `params.yaml`.
 
 ```yaml
 project:
@@ -278,410 +223,141 @@ neural:
   sample_size: 200000
 ```
 
-## 12. Models
+---
 
-### 12.1. Popularity Baseline
+## 12. Modelos
 
-The baseline model recommends the most popular items based on the training data.
+### 12.1. Baseline de Popularidade
+Modelo simples baseado na contagem de interações ponderadas acumuladas do conjunto de treino. Recomenda os itens mais populares do catálogo geral.
 
-This model is simple, fast and useful as a reference point.
+Implementado em: [baseline.py](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/baseline.py)
 
-Implemented in:
+### 12.2. Recomendador Neural
+Rede neural PyTorch baseada em embeddings que recebe o índice de usuário e de item e estima o score contínuo de afinidade através de camadas densas (MLP).
 
-```text
-src/recommender/models/baseline.py
-```
+Implementado em: [neural.py](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/neural.py)
 
-Main script:
+### 12.3. Padrões de Projeto (Design Patterns)
+Para assegurar a modularidade e facilidade de extensão de código:
+* **Classe Abstrata**: [BaseRecommender](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/base.py) define o contrato com métodos `fit`, `recommend`, `save` e `load`.
+* **Padrão Factory**: [RecommenderFactory](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/factory.py) permite instanciar de forma transparente os modelos com base em uma string identificadora (`popularity` ou `neural`).
 
-```bash
-poetry run python scripts/run_baseline_experiment.py \
-  --train-path data/processed/train_features.parquet \
-  --test-path data/processed/test_features.parquet \
-  --model-output-path models/baseline/popularity_model.json \
-  --metrics-output-path reports/baseline_metrics.json \
-  --top-k 10 \
-  --tracking-uri sqlite:///mlflow.db \
-  --experiment-name product-recommender
-```
+---
 
-### 12.2. Neural Recommender
+## 13. Estratégia de Avaliação Neural
 
-The neural recommender is an embedding-based PyTorch model.
+Para otimizar o tempo de avaliação sem testar todo o catálogo para todos os usuários:
+1. O baseline de popularidade seleciona 100 itens candidatos.
+2. A rede neural reordena estes 100 candidatos.
+3. Avaliam-se as métricas Top-10 de ranking.
 
-Architecture:
+---
 
-```text
-user_index → user_embedding
-item_index → item_embedding
-concat(user_embedding, item_embedding)
-→ MLP
-→ predicted interaction score
-```
+## 14. Métricas de Avaliação
 
-Implemented in:
+* **Precision@K**: Proporção de recomendados relevantes.
+* **Recall@K**: Proporção de relevantes capturados.
+* **Hit Rate@K**: Presença de pelo menos um relevante nas recomendações.
+* **Coverage@K**: Diversidade/cobertura do catálogo.
 
-```text
-src/recommender/models/neural.py
-```
+A métrica norteadora principal é o **Hit Rate@10**.
 
-Main script:
+---
 
-```bash
-poetry run python scripts/run_neural_experiment.py \
-  --train-path data/processed/train_features.parquet \
-  --model-output-path models/neural/neural_recommender.pt \
-  --metrics-output-path reports/neural_train_metrics.json \
-  --history-output-path reports/neural_train_history.json \
-  --epochs 2 \
-  --batch-size 8192 \
-  --embedding-dim 8 \
-  --hidden-dim 16 \
-  --learning-rate 0.001 \
-  --sample-size 200000 \
-  --tracking-uri sqlite:///mlflow.db \
-  --experiment-name product-recommender \
-  --run-name neural_recommender_v1
-```
+## 15. Resultados da Versão V1
 
-### 12.3. Design Patterns (Clean Code)
+| Modelo | Precision@10 | Recall@10 | Hit Rate@10 | Coverage@10 |
+| ------ | -----------: | --------: | ----------: | ----------: |
+| Baseline de Popularidade | 0.0002266 | 0.002266 | 0.002266 | 0.000110 |
+| Reranker Neural | 0.0000400 | 0.000400 | 0.000400 | 0.000264 |
 
-To adhere to clean code standards and strict software design principles, the project implements the following design patterns:
+O baseline foi superior em acurácia de relevância imediata (Hit Rate), porém o modelo neural se mostrou melhor na diversificação das indicações (cobertura do catálogo).
 
-* **Abstract Base Class (ABC)**: [BaseRecommender](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/base.py) defines the contract for all recommendation engines, ensuring that they consistently implement `fit`, `recommend`, `save`, and `load` methods.
-* **Factory Pattern**: [RecommenderFactory](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/factory.py) decouples client scripts from concrete model instantiations. It allows creating any supported recommender (e.g. `popularity` or `neural`) using a simple key parameter.
+---
 
-## 13. Neural Evaluation Strategy
+## 16. Servidor de Rastreamento (MLflow)
 
-The neural model is evaluated using candidate reranking.
-
-Instead of scoring the entire item catalog for every user, the system uses a two-step approach:
-
-```text
-Popularity model generates candidate items
-→ Neural model reranks the candidates
-→ Ranking metrics are calculated
-```
-
-This design makes evaluation more efficient and closer to common recommender system architectures.
-
-Evaluation script:
-
-```bash
-poetry run python scripts/evaluate_neural.py \
-  --train-path data/processed/train_features.parquet \
-  --test-path data/processed/test_features.parquet \
-  --model-path models/neural/neural_recommender.pt \
-  --baseline-model-path models/baseline/popularity_model.json \
-  --metrics-output-path reports/neural_eval_metrics.json \
-  --top-k 10 \
-  --candidate-size 100 \
-  --max-users 10000
-```
-
-## 14. Evaluation Metrics
-
-The project compares models using ranking metrics at K:
-
-| Metric           | Description                                             |
-| ---------------- | ------------------------------------------------------- |
-| `precision_at_k` | Fraction of recommended items that are relevant         |
-| `recall_at_k`    | Fraction of relevant items retrieved in the top K       |
-| `hit_rate_at_k`  | Whether at least one relevant item appears in the top K |
-| `coverage_at_k`  | Catalog coverage across recommendations                 |
-
-The main decision metric in V1 is `hit_rate_at_k`.
-
-## 15. V1 Results
-
-### 15.1. Baseline Popularity Model
-
-```json
-{
-  "precision_at_k": 0.00022660965794768615,
-  "recall_at_k": 0.002266096579476861,
-  "hit_rate_at_k": 0.002266096579476861,
-  "coverage_at_k": 0.00011009384399261931
-}
-```
-
-### 15.2. Neural Reranker
-
-```json
-{
-  "precision_at_k": 0.00004,
-  "recall_at_k": 0.0004,
-  "hit_rate_at_k": 0.0004,
-  "coverage_at_k": 0.00026422522558228634
-}
-```
-
-### 15.3. Model Comparison
-
-| Model               | Precision@10 | Recall@10 | Hit Rate@10 | Coverage@10 |
-| ------------------- | -----------: | --------: | ----------: | ----------: |
-| Popularity Baseline |    0.0002266 |  0.002266 |    0.002266 |    0.000110 |
-| Neural Reranker     |    0.0000400 |  0.000400 |    0.000400 |    0.000264 |
-
-### 15.4. Interpretation
-
-The popularity baseline outperformed the neural reranker in precision, recall and hit rate.
-
-The neural model achieved higher catalog coverage, meaning it recommended a broader set of items.
-
-The V1 conclusion is that the popularity baseline is the best-performing model for relevance, while the neural model demonstrates a complete PyTorch-based recommender architecture integrated with the MLOps pipeline.
-
-Future improvements should focus on:
-
-* larger neural training samples;
-* ranking-oriented loss functions;
-* negative sampling;
-* stronger candidate generation;
-* item metadata features;
-* category-aware recommendations.
-
-## 16. MLflow Tracking
-
-MLflow is used to track:
-
-* parameters;
-* metrics;
-* artifacts;
-* model files;
-* training history;
-* model registration.
-
-Tracking URI:
-
-```text
-sqlite:///mlflow.db
-```
-
-To open the MLflow UI:
-
+O MLflow monitora os logs locais em um banco SQLite (`sqlite:///mlflow.db`).
+Para iniciar o servidor web do MLflow local:
 ```bash
 poetry run mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
+Em seguida, abra: `http://localhost:5000`
 
-Then open:
-
-```text
-http://localhost:5000
-```
-
-Tracked runs include:
-
-```text
-baseline_popularity
-neural_recommender_sample_v1
-neural_recommender_sample_v2
-neural_recommender_dvc
-register_neural_recommender
-```
+---
 
 ## 17. MLflow Model Registry
 
-The neural recommender was registered in MLflow Model Registry as:
+O recomendador neural é registrado no registry sob o nome `retailrocket-neural-recommender`.
+Os modelos que cumprem as exigências mínimas recebem a tag de validação `validation_status=approved` e são promovidos automaticamente para o alias `champion` e estágio `Production`.
 
-```text
-retailrocket-neural-recommender
-```
+---
 
-Registered version:
+## 18. Docker e Docker Compose
 
-```text
-Version 1
-```
+O projeto conta com imagens multi-stage otimizadas.
 
-Aliases:
-
-```text
-staging
-champion
-```
-
-Model version tags:
-
-```text
-model_type: neural_reranker
-validation_status: approved
-decision_metric: hit_rate_at_k
-```
-
-Registration script:
-
-```bash
-poetry run python scripts/register_model.py \
-  --model-path models/neural/neural_recommender.pt \
-  --metrics-path reports/neural_eval_metrics.json \
-  --registered-model-name retailrocket-neural-recommender \
-  --tracking-uri sqlite:///mlflow.db \
-  --experiment-name product-recommender \
-  --run-name register_neural_recommender
-```
-
-## 18. Docker
-
-The project includes a multi-stage Dockerfile and Docker Compose setup.
-
-Build the image:
-
-```bash
-docker compose build
-```
-
-Validate the container environment:
-
-```bash
-docker compose run --rm trainer python scripts/validate_env.py
-```
-
-Run MLflow with Docker Compose:
-
-```bash
-docker compose up mlflow
-```
-
-Run the DVC pipeline inside Docker:
-
-```bash
-docker compose run --rm trainer dvc repro
-```
-
-## 19. Cloud Infrastructure with Terraform (AWS)
-
-The project includes an enterprise-grade cloud deployment architecture located in the `terraform/` directory.
-
-### 19.1. Components
-* **AWS S3**: Bucket `fiappostech9mletgrupo17-fase02-mlflow-artifacts` for storing model artifacts centrally.
-* **AWS EC2**: Instance `t3.micro` hosting the MLflow server via Docker, with an automated bootstrap script (`user_data`) configuring 2GB swap and running the tracking server.
-* **AWS CloudFront**: CDN mapping to the EC2 instance origin on port 5000, serving HTTPS and applying geographical whitelisting (restricting traffic to IPs of BR and PT).
-* **AWS ACM**: Free SSL certificate validation via DNS for `mlflow.recommender.cloud-ip.cc`.
-* **AWS WAF**: Web Application Firewall restricting rate limits to 100 requests per 5 minutes per IP.
-
-### 19.2. How to Initialize
-1. Initialize Terraform provider:
+1. Construir a imagem:
    ```bash
-   cd terraform
-   terraform init
+   docker compose build
    ```
-2. Validate syntax:
+2. Validar variáveis locais:
    ```bash
-   terraform validate
+   docker compose run --rm trainer python scripts/validate_env.py
    ```
-3. Plan resources:
+3. Iniciar servidor MLflow local:
    ```bash
-   terraform plan
+   docker compose up mlflow
+   ```
+4. Rodar o pipeline do DVC isolado:
+   ```bash
+   docker compose run --rm trainer dvc repro
    ```
 
-## 20. CI/CD Pipelines (GitHub Actions)
+---
 
-The repository integrates automated workflows under `.github/workflows/`:
+## 19. Infraestrutura de Nuvem (Terraform AWS)
 
-* **`docker-publish.yml`**: Runs Pytest and Ruff lint checks on every commit, builds the custom recommender Docker image, pushes it to Docker Hub, and triggers a rolling update on the EC2 instance via AWS SSM.
-* **`coverage-publish.yml`**: Executes unit tests, calculates test coverage, generates a coverage badge, and publishes an HTML coverage report directly to GitHub Pages.
-* **`deploy-infra.yml`**: Triggers manual workflow actions to apply or destroy Terraform infrastructure.
-* **`restart-ec2.yml`**: Triggers manual workflow actions to reboot the MLflow EC2 server.
+Localizada na pasta `terraform/`, a infraestrutura em nuvem provisiona uma arquitetura completa MLOps:
+* **S3 Bucket**: Persistência global de artefatos de experimentos.
+* **EC2 Instance (`t3.micro`)**: Hospeda o contêiner Docker do servidor MLflow central.
+* **CloudFront CDN**: Entrega HTTPS segura via ACM SSL e restrição geográfica (Whitelists BR e PT).
+* **AWS WAF**: Bloqueios adicionais de segurança e proteção de ataques (Rate Limit).
 
-## 21. Testing
+Para iniciar e validar:
+```bash
+cd terraform
+terraform init
+terraform validate
+terraform plan
+```
 
-Run all tests:
+---
 
+## 20. Esteiras de CI/CD (GitHub Actions)
+
+* **`docker-publish.yml`**: Roda testes automatizados, constrói e publica a imagem Docker no Docker Hub, executando o deploy contínuo via AWS SSM.
+* **`coverage-publish.yml`**: Roda os testes, calcula a cobertura de código, gera o crachá e publica o HTML no GitHub Pages.
+* **`deploy-infra.yml`**: Executa `apply` ou `destroy` do Terraform.
+* **`restart-ec2.yml`**: Reinicia a máquina EC2 associada ao MLflow.
+
+---
+
+## 21. Execução de Testes
+
+Rode a suíte de testes unitários local:
 ```bash
 poetry run pytest
 ```
 
-Run code quality checks:
-
+Validação de qualidade do código (Linter):
 ```bash
 poetry run ruff check . --fix
 poetry run ruff format .
-poetry run pre-commit run --all-files
 ```
 
-## 22. Current Project Status
+---
 
-V1 completed:
+## 22. Status Atual do Projeto
 
-* project structure;
-* Poetry environment;
-* Ruff and pre-commit;
-* pytest test suite;
-* RetailRocket dataset adapter;
-* preprocessing pipeline;
-* temporal train-test split;
-* feature engineering;
-* popularity baseline;
-* PyTorch neural recommender;
-* baseline evaluation;
-* neural evaluation;
-* model comparison report;
-* MLflow tracking;
-* DVC data versioning;
-* DVC reproducible pipeline;
-* Docker multi-stage environment;
-* Docker Compose services;
-* MLflow Model Registry;
-* registered neural model with staging and champion aliases.
-
-## 23. Limitations
-
-The V1 neural model did not outperform the popularity baseline in relevance metrics.
-
-Main limitations:
-
-* neural model trained on a sample of 200,000 rows;
-* simple regression objective over interaction score;
-* no negative sampling strategy;
-* no item metadata used;
-* no category or product attributes used;
-* candidate generation based only on popularity;
-* evaluation limited to known users and known items.
-
-## 24. Future Improvements
-
-Recommended improvements for V2:
-
-* implement negative sampling;
-* use ranking loss instead of MSE;
-* include item metadata and categories;
-* train with larger data samples or full dataset;
-* experiment with matrix factorization baselines;
-* add LightFM or implicit ALS as stronger baselines;
-* improve candidate generation;
-* add inference API;
-* deploy as a service;
-* automate model selection based on evaluation metrics.
-
-## 25. Semantic Commit History
-
-The project was built using semantic commits, including:
-
-```text
-feat: add feature engineering pipeline
-feat: add popularity baseline recommender
-feat: add recommendation evaluation metrics
-feat: add train test split pipeline
-feat: add mlflow tracking for baseline
-feat: add pytorch neural recommender components
-feat: add neural training pipeline
-feat: add reusable feature mappings
-feat: add retailrocket dataset adapter
-perf: optimize popularity baseline recommendations
-feat: add mlflow tracking for neural training
-perf: add neural training sampling and progress logs
-feat: add neural recommendation evaluation
-feat: add model comparison report
-chore: initialize dvc data versioning
-feat: add dvc reproducible pipeline
-feat: add dockerized training environment
-feat: add mlflow model registry promotion
-```
-
-## 26. Final V1 Conclusion
-
-The V1 successfully delivers a complete Machine Learning Engineering workflow for a product recommendation system.
-
-The popularity baseline is the best-performing model in relevance metrics, while the neural recommender demonstrates the required PyTorch architecture and full MLOps integration.
-
-The project is reproducible, tested, tracked with MLflow, versioned with DVC, containerized with Docker and includes model lifecycle management through MLflow Model Registry.
+Fase 2 entregue com sucesso: pipelines versionados e reprodutíveis no DVC, rastreamento ativo no MLflow, conteinerização Docker funcional, arquitetura limpa com padrões de projeto aplicados, validação de estilo sem erros e infraestrutura automatizada pronta.

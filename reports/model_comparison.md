@@ -1,41 +1,35 @@
-# Model Comparison Report
+# Relatório de Comparação de Modelos
 
-## Objective
+## Objetivo
 
-Compare the popularity baseline recommender against the neural recommender
-using ranking metrics at K.
+Comparar o modelo baseline de popularidade com o recomendador neural utilizando métricas de ordenação (ranking) calculadas em K.
 
-## Compared Models
+## Modelos Comparados
 
 - Baseline: `popularity_baseline`
-- Challenger: `neural_reranker`
+- Desafiante (Challenger): `neural_reranker`
 
-## Metrics
+## Métricas
 
-| Metric | popularity_baseline | neural_reranker | Relative Difference |
+| Métrica | popularity_baseline | neural_reranker | Diferença Relativa |
 |---|---:|---:|---:|
 | precision_at_k | 0.0227% | 0.0040% | -82.35% |
 | recall_at_k | 0.2266% | 0.0400% | -82.35% |
 | hit_rate_at_k | 0.2266% | 0.0400% | -82.35% |
 | coverage_at_k | 0.0110% | 0.0264% | +140.00% |
 
-## Decision
+## Decisão
 
-Selected model: `popularity_baseline`
+Modelo selecionado: `popularity_baseline`
 
-The popularity baseline performed better on hit rate, precision and recall
-in this experiment.
+O baseline de popularidade apresentou melhor desempenho em hit rate, precision e recall neste experimento.
 
-The neural model increased catalog coverage, but it did not outperform the
-baseline in ranking relevance.
+O modelo neural aumentou a cobertura do catálogo (coverage), mas não superou o baseline em relevância de ordenação.
 
-## Technical Interpretation
+## Interpretação Técnica
 
-The neural model was trained as a first PyTorch MLP/embedding-based
-recommender and evaluated through candidate reranking.
+O modelo neural foi treinado como um recomendador PyTorch baseado em embeddings e MLP, sendo avaliado por meio do reordenamento de candidatos (reranking).
 
-The current version uses a sampled training run and a simple regression
-objective over interaction scores.
+A versão atual (V1) utiliza uma amostra dos dados de treino e um objetivo simples de regressão sobre o score de interação (MSE).
 
-Future improvements should test larger training samples, ranking-oriented
-losses, stronger negative sampling and better candidate generation.
+Melhorias futuras devem explorar amostras maiores de treino, funções de perda voltadas a ranking (como perdas bayesianas ou contrastivas), estratégias robustas de amostragem negativa (negative sampling) e geração de candidatos aprimorada.
