@@ -201,6 +201,46 @@ def train_neural_recommender(
     )
 
 
+def check_early_stopping(
+    validation_loss: float,
+    best_loss: float,
+    min_delta: float,
+) -> tuple[bool, float]:
+    """Check validation loss improvement.
+
+    Args:
+        validation_loss: Current validation loss.
+        best_loss: Best validation loss so far.
+        min_delta: Minimum change to qualify as an improvement.
+
+    Returns:
+        Whether the loss improved, and the new best loss.
+    """
+    improved = validation_loss < best_loss - min_delta
+    return improved, (validation_loss if improved else best_loss)
+
+
+def build_training_result(
+    history: list[dict[str, float]],
+    best_epoch: int,
+) -> NeuralTrainingResult:
+    """Build the final NeuralTrainingResult object.
+
+    Args:
+        history: Training history records.
+        best_epoch: Best epoch index.
+
+    Returns:
+        NeuralTrainingResult object.
+    """
+    return NeuralTrainingResult(
+        train_loss=history[-1]["train_loss"],
+        validation_loss=history[-1]["validation_loss"],
+        epochs_trained=len(history),
+        best_epoch=best_epoch,
+    )
+
+
 def run_training_loop(
     model: NeuralRecommender,
     train_loader: DataLoader,
@@ -211,45 +251,25 @@ def run_training_loop(
 ) -> tuple[NeuralRecommender, NeuralTrainingResult, list[dict[str, float]]]:
     """Run the neural training loop with early stopping."""
     best_validation_loss = float("inf")
-    best_epoch = 0
-    epochs_without_improvement = 0
+    best_epoch, epochs_without_improvement = 0, 0
     history: list[dict[str, float]] = []
 
     for epoch in range(1, config.epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn)
-        validation_loss = evaluate_loss(model, validation_loader, loss_fn) or train_loss
-        history.append(
-            {
-                "epoch": float(epoch),
-                "train_loss": train_loss,
-                "validation_loss": validation_loss,
-            },
-        )
+        val_loss = evaluate_loss(model, validation_loader, loss_fn) or train_loss
+        history.append({"epoch": float(epoch), "train_loss": train_loss, "validation_loss": val_loss})
+        print(f"Epoch {epoch}/{config.epochs} - train_loss={train_loss:.4f} - validation_loss={val_loss:.4f}")
 
-        print(
-            f"Epoch {epoch}/{config.epochs} - "
-            f"train_loss={train_loss:.4f} - "
-            f"validation_loss={validation_loss:.4f}",
-        )
-
-        improved = validation_loss < best_validation_loss - config.min_delta
+        improved, best_validation_loss = check_early_stopping(val_loss, best_validation_loss, config.min_delta)
         if improved:
-            best_validation_loss = validation_loss
-            best_epoch = epoch
-            epochs_without_improvement = 0
+            best_epoch, epochs_without_improvement = epoch, 0
         else:
             epochs_without_improvement += 1
 
         if epochs_without_improvement >= config.patience:
             break
 
-    result = NeuralTrainingResult(
-        train_loss=history[-1]["train_loss"],
-        validation_loss=history[-1]["validation_loss"],
-        epochs_trained=len(history),
-        best_epoch=best_epoch,
-    )
-
+    result = build_training_result(history, best_epoch)
     return model, result, history
 
 
