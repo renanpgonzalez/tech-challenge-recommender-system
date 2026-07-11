@@ -344,6 +344,13 @@ poetry run python scripts/run_neural_experiment.py \
   --run-name neural_recommender_v1
 ```
 
+### 12.3. Design Patterns (Clean Code)
+
+To adhere to clean code standards and strict software design principles, the project implements the following design patterns:
+
+* **Abstract Base Class (ABC)**: [BaseRecommender](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/base.py) defines the contract for all recommendation engines, ensuring that they consistently implement `fit`, `recommend`, `save`, and `load` methods.
+* **Factory Pattern**: [RecommenderFactory](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/factory.py) decouples client scripts from concrete model instantiations. It allows creating any supported recommender (e.g. `popularity` or `neural`) using a simple key parameter.
+
 ## 13. Neural Evaluation Strategy
 
 The neural model is evaluated using candidate reranking.
@@ -541,7 +548,42 @@ Run the DVC pipeline inside Docker:
 docker compose run --rm trainer dvc repro
 ```
 
-## 19. Testing
+## 19. Cloud Infrastructure with Terraform (AWS)
+
+The project includes an enterprise-grade cloud deployment architecture located in the `terraform/` directory.
+
+### 19.1. Components
+* **AWS S3**: Bucket `fiappostech9mletgrupo17-fase02-mlflow-artifacts` for storing model artifacts centrally.
+* **AWS EC2**: Instance `t3.micro` hosting the MLflow server via Docker, with an automated bootstrap script (`user_data`) configuring 2GB swap and running the tracking server.
+* **AWS CloudFront**: CDN mapping to the EC2 instance origin on port 5000, serving HTTPS and applying geographical whitelisting (restricting traffic to IPs of BR and PT).
+* **AWS ACM**: Free SSL certificate validation via DNS for `mlflow.recommender.cloud-ip.cc`.
+* **AWS WAF**: Web Application Firewall restricting rate limits to 100 requests per 5 minutes per IP.
+
+### 19.2. How to Initialize
+1. Initialize Terraform provider:
+   ```bash
+   cd terraform
+   terraform init
+   ```
+2. Validate syntax:
+   ```bash
+   terraform validate
+   ```
+3. Plan resources:
+   ```bash
+   terraform plan
+   ```
+
+## 20. CI/CD Pipelines (GitHub Actions)
+
+The repository integrates automated workflows under `.github/workflows/`:
+
+* **`docker-publish.yml`**: Runs Pytest and Ruff lint checks on every commit, builds the custom recommender Docker image, pushes it to Docker Hub, and triggers a rolling update on the EC2 instance via AWS SSM.
+* **`coverage-publish.yml`**: Executes unit tests, calculates test coverage, generates a coverage badge, and publishes an HTML coverage report directly to GitHub Pages.
+* **`deploy-infra.yml`**: Triggers manual workflow actions to apply or destroy Terraform infrastructure.
+* **`restart-ec2.yml`**: Triggers manual workflow actions to reboot the MLflow EC2 server.
+
+## 21. Testing
 
 Run all tests:
 
@@ -557,7 +599,7 @@ poetry run ruff format .
 poetry run pre-commit run --all-files
 ```
 
-## 20. Current Project Status
+## 22. Current Project Status
 
 V1 completed:
 
@@ -582,7 +624,7 @@ V1 completed:
 * MLflow Model Registry;
 * registered neural model with staging and champion aliases.
 
-## 21. Limitations
+## 23. Limitations
 
 The V1 neural model did not outperform the popularity baseline in relevance metrics.
 
@@ -596,7 +638,7 @@ Main limitations:
 * candidate generation based only on popularity;
 * evaluation limited to known users and known items.
 
-## 22. Future Improvements
+## 24. Future Improvements
 
 Recommended improvements for V2:
 
@@ -611,7 +653,7 @@ Recommended improvements for V2:
 * deploy as a service;
 * automate model selection based on evaluation metrics.
 
-## 23. Semantic Commit History
+## 25. Semantic Commit History
 
 The project was built using semantic commits, including:
 
@@ -636,7 +678,7 @@ feat: add dockerized training environment
 feat: add mlflow model registry promotion
 ```
 
-## 24. Final V1 Conclusion
+## 26. Final V1 Conclusion
 
 The V1 successfully delivers a complete Machine Learning Engineering workflow for a product recommendation system.
 
