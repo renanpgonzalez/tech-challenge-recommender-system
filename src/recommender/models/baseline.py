@@ -9,6 +9,7 @@ import pandas as pd
 
 from recommender.data.schema import InteractionColumn
 from recommender.features.engineering import FeatureColumn
+from recommender.models.base import BaseRecommender
 
 REQUIRED_BASELINE_COLUMNS: set[str] = {
     InteractionColumn.ITEM_ID.value,
@@ -62,9 +63,6 @@ def rank_items_by_popularity(data: pd.DataFrame) -> pd.DataFrame:
         )
         .reset_index(drop=True)
     )
-
-
-from recommender.models.base import BaseRecommender
 
 
 @dataclass

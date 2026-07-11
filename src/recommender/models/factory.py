@@ -1,9 +1,7 @@
 """Factory for creating recommendation models."""
 
 from typing import Any
-import torch
 
-from recommender.models.base import BaseRecommender
 from recommender.models.baseline import PopularityRecommender
 from recommender.models.neural import NeuralRecommender
 
