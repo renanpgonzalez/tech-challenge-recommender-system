@@ -244,3 +244,10 @@ reports/model_comparison_dvc.md
 # Context
 context/
 .DS_Store
+
+# Local DVC storage cache
+dvc-storage/**
+!dvc-storage/
+!dvc-storage/**/
+!dvc-storage/**/.gitkeep
+.dvc/dvc-storage/
