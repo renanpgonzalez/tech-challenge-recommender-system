@@ -23,6 +23,8 @@
    * **Vídeo Link (YouTube/Loom/Drive):** [https://www.youtube.com/watch?v=INSERT_YOUR_STAR_VIDEO_ID_HERE](https://www.youtube.com/watch?v=INSERT_YOUR_STAR_VIDEO_ID_HERE)
    * *Nota:* Vídeo pitch explicativo de 5 minutos detalhando a Situação (Situation), Tarefa (Task), Ações (Action) e Resultados (Result) da solução de recomendação construída.
 
-3. **Deploy em Ambiente de Produção (Opcional / Nuvem):**
-   * **URL Pública do Serviço (se aplicável):** [https://exemplo-url-nuvem.com](https://exemplo-url-nuvem.com)
-   * *Nota:* O deploy em nuvem é opcional nesta fase. A execução completa do pipeline de treinamento e servidor de experimentos do MLflow também pode ser reproduzida localmente de forma containerizada rodando `docker compose up`.
+3. **Deploy em Ambiente de Produção (Central de Experimentos MLflow na AWS):**
+   * **MLflow Tracking UI (CloudFront):** [https://mlflow.recommender.cloud-ip.cc](https://mlflow.recommender.cloud-ip.cc)
+   * **S3 Artifact Storage:** `fiappostech9mletgrupo17-fase02-mlflow-artifacts`
+   * *Nota 1 (Arquitetura de Rastreamento):* A infraestrutura de nuvem da Fase 2 foi estruturada utilizando Terraform (localizada na pasta `terraform/`). Ela cria uma central de rastreamento de experimentos do MLflow em uma instância EC2 (t3.micro) integrada ao S3 para gravação de modelos e artefatos de treinamento remotamente.
+   * *Nota 2 (Segurança & WAF):* O servidor está protegido por HTTPS seguro (AWS ACM) via CloudFront CDN. Conta com controle geográfico (Geo-Blocking) restringindo o acesso apenas a IPs do Brasil e de Portugal, além de regras de AWS WAF aplicando Rate Limiting (máximo de 100 requisições a cada 5 minutos por IP) na borda da rede.

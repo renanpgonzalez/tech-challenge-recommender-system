@@ -251,3 +251,8 @@ dvc-storage/**
 !dvc-storage/**/
 !dvc-storage/**/.gitkeep
 .dvc/dvc-storage/
+
+# Terraform local folders and files
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate*
