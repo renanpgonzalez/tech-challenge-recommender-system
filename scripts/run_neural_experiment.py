@@ -4,6 +4,7 @@ import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from recommender.data import read_dataframe
 from recommender.data.io import ensure_parent_dir

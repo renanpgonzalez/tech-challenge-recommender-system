@@ -257,10 +257,22 @@ def run_training_loop(
     for epoch in range(1, config.epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn)
         val_loss = evaluate_loss(model, validation_loader, loss_fn) or train_loss
-        history.append({"epoch": float(epoch), "train_loss": train_loss, "validation_loss": val_loss})
-        print(f"Epoch {epoch}/{config.epochs} - train_loss={train_loss:.4f} - validation_loss={val_loss:.4f}")
+        history.append(
+            {
+                "epoch": float(epoch),
+                "train_loss": train_loss,
+                "validation_loss": val_loss,
+            }
+        )
+        print(
+            f"Epoch {epoch}/{config.epochs} - "
+            f"train_loss={train_loss:.4f} - "
+            f"validation_loss={val_loss:.4f}"
+        )
 
-        improved, best_validation_loss = check_early_stopping(val_loss, best_validation_loss, config.min_delta)
+        improved, best_validation_loss = check_early_stopping(
+            val_loss, best_validation_loss, config.min_delta
+        )
         if improved:
             best_epoch, epochs_without_improvement = epoch, 0
         else:
