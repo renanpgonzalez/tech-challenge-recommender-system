@@ -1,0 +1,104 @@
+name: CI/CD Pipeline - Docker Hub
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Run Pytest and Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+
+      - name: Install Dependencies
+        run: |
+          poetry install --with dev
+          
+      - name: Run Ruff Linting
+        run: poetry run ruff check .
+
+      - name: Run Tests
+        run: poetry run pytest tests/ -v
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    # Esse job só roda no PUSH da branch main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:latest, ${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:buildcache,mode=max
+
+  deploy-to-aws:
+    name: Continuous Deployment (SSM)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "sa-east-1"
+      DOCKER_IMAGE: "${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:latest"
+
+    steps:
+      - name: Deploy via AWS SSM
+        run: |
+          echo "Buscando ID da instância EC2 do MLflow ligada..."
+          INSTANCE_ID=$(aws ec2 describe-instances --region $AWS_REGION --filters "Name=tag:Name,Values=Recommender-MLflow-Server" "Name=instance-state-name,Values=running" --query "Reservations[0].Instances[0].InstanceId" --output text)
+          
+          if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+            echo "Nenhuma instância EC2 ligada encontrada. Pulando o deploy automático."
+            exit 0
+          fi
+
+          echo "Enviando comando de atualização do Docker para a máquina $INSTANCE_ID..."
+          COMMANDS='["docker stop mlflow-server || true", "docker rm mlflow-server || true", "docker system prune -a -f", "docker pull '$DOCKER_IMAGE'", "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION='$AWS_REGION' '$DOCKER_IMAGE' mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ --host 0.0.0.0 --port 5000"]'
+          
+          COMMAND_ID=$(aws ssm send-command \
+            --region $AWS_REGION \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=$COMMANDS" \
+            --comment "Atualizando container Docker do MLflow Server" \
+            --query "Command.CommandId" --output text)
+            
+          echo "Comando SSM enviado com sucesso (ID: $COMMAND_ID). A imagem do MLflow está sendo atualizada no servidor."

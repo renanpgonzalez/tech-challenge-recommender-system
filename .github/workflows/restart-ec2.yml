@@ -1,0 +1,40 @@
+name: Ops - Restart EC2 Instance
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch: # Permite rodar o workflow manualmente pelo painel do Github
+
+jobs:
+  reboot:
+    name: Reboot MLflow Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: sa-east-1
+
+      - name: 🔄 Find and Reboot EC2 Instance
+        run: |
+          # Busca o ID da máquina baseado na Tag Name que definimos no Terraform
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=Recommender-MLflow-Server" "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].InstanceId" \
+            --output text)
+            
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "❌ Nenhuma instância rodando encontrada com a tag Recommender-MLflow-Server"
+            exit 1
+          fi
+          
+          echo "✅ Encontrada instância rodando: $INSTANCE_ID"
+          echo "Enviando comando de Reboot..."
+          
+          aws ec2 reboot-instances --instance-ids $INSTANCE_ID
+          
+          echo "🚀 Máquina reiniciada com sucesso! Aguarde cerca de 1 a 2 minutos para o MLflow voltar a responder."
