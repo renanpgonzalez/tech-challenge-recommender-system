@@ -188,6 +188,7 @@ artifacts/
 # DVC
 .dvc/tmp/
 .dvc/cache/
+.dvc/dvc-storage/
 
 # Local ML artifacts
 models/**/*.pkl
@@ -239,3 +240,7 @@ mlruns/
 
 # DVC generated report
 reports/model_comparison_dvc.md
+
+# Context
+context/
+.DS_Store
