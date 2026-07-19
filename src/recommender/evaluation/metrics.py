@@ -134,23 +134,35 @@ def coverage_at_k(
     return len(recommended_catalog_items) / len(catalog_item_set)
 
 
+def compute_user_metrics_at_k(
+    rec_items: Sequence[str],
+    rel_items: Sequence[str] | set[str],
+    k: int,
+) -> tuple[float, float, float]:
+    """Compute precision, recall, and hit rate at k for a single user.
+
+    Args:
+        rec_items: Recommended items.
+        rel_items: Relevant items.
+        k: Recommendation limit.
+
+    Returns:
+        Precision, recall, and hit rate values.
+    """
+    return (
+        precision_at_k(rec_items, rel_items, k),
+        recall_at_k(rec_items, rel_items, k),
+        hit_rate_at_k(rec_items, rel_items, k),
+    )
+
+
 def mean_metrics_at_k(
     recommendations_by_user: Mapping[str, Sequence[str]],
     relevant_items_by_user: Mapping[str, Sequence[str] | set[str]],
     catalog_items: Sequence[str] | set[str],
     k: int,
 ) -> dict[str, float]:
-    """Compute mean recommendation metrics at k.
-
-    Args:
-        recommendations_by_user: Ranked recommendations by user.
-        relevant_items_by_user: Ground-truth relevant items by user.
-        catalog_items: Full catalog item set.
-        k: Number of recommendations to evaluate.
-
-    Returns:
-        Mean recommendation metrics.
-    """
+    """Compute mean recommendation metrics at k."""
     validate_k(k)
 
     user_ids = sorted(relevant_items_by_user)
@@ -163,34 +175,18 @@ def mean_metrics_at_k(
             "coverage_at_k": 0.0,
         }
 
-    precision_scores = [
-        precision_at_k(
-            recommendations_by_user.get(user_id, []),
-            relevant_items_by_user[user_id],
+    scores = [
+        compute_user_metrics_at_k(
+            recommendations_by_user.get(uid, []),
+            relevant_items_by_user[uid],
             k,
         )
-        for user_id in user_ids
-    ]
-    recall_scores = [
-        recall_at_k(
-            recommendations_by_user.get(user_id, []),
-            relevant_items_by_user[user_id],
-            k,
-        )
-        for user_id in user_ids
-    ]
-    hit_rate_scores = [
-        hit_rate_at_k(
-            recommendations_by_user.get(user_id, []),
-            relevant_items_by_user[user_id],
-            k,
-        )
-        for user_id in user_ids
+        for uid in user_ids
     ]
 
     return {
-        "precision_at_k": sum(precision_scores) / len(precision_scores),
-        "recall_at_k": sum(recall_scores) / len(recall_scores),
-        "hit_rate_at_k": sum(hit_rate_scores) / len(hit_rate_scores),
+        "precision_at_k": sum(s[0] for s in scores) / len(scores),
+        "recall_at_k": sum(s[1] for s in scores) / len(scores),
+        "hit_rate_at_k": sum(s[2] for s in scores) / len(scores),
         "coverage_at_k": coverage_at_k(recommendations_by_user, catalog_items, k),
     }

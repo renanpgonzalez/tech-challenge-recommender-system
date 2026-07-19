@@ -3,6 +3,7 @@
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import mlflow
 import mlflow.pytorch
@@ -58,32 +59,27 @@ def load_metrics(path: Path) -> dict[str, float]:
     }
 
 
-def register_model(
+def log_and_register_pytorch_model(
+    model: Any,
+    metrics: dict[str, float],
+    registered_model_name: str,
     model_path: Path,
     metrics_path: Path,
-    registered_model_name: str,
-    tracking_uri: str,
-    experiment_name: str,
     run_name: str,
-) -> None:
-    """Register and promote a trained neural recommender model.
+) -> str:
+    """Log PyTorch model to MLflow and register it.
 
     Args:
-        model_path: Trained PyTorch model artifact path.
-        metrics_path: Evaluation metrics path.
-        registered_model_name: MLflow registered model name.
-        tracking_uri: MLflow tracking URI.
-        experiment_name: MLflow experiment name.
+        model: PyTorch model.
+        metrics: Evaluation metrics.
+        registered_model_name: Registered model name.
+        model_path: Local model path.
+        metrics_path: Local metrics path.
         run_name: MLflow run name.
+
+    Returns:
+        The MLflow run ID.
     """
-    configure_mlflow(
-        tracking_uri=tracking_uri,
-        experiment_name=experiment_name,
-    )
-
-    model, _ = load_neural_model(model_path)
-    metrics = load_metrics(metrics_path)
-
     with mlflow.start_run(run_name=run_name) as run:
         mlflow.log_params(
             {
@@ -100,14 +96,21 @@ def register_model(
             code_paths=["src"],
             pip_requirements=["torch", "mlflow"],
         )
-        run_id = run.info.run_id
+        return str(run.info.run_id)
 
-    client = MlflowClient(tracking_uri=tracking_uri)
-    model_version = find_model_version_by_run_id(
-        client=client,
-        model_name=registered_model_name,
-        run_id=run_id,
-    )
+
+def tag_registered_model_version(
+    client: MlflowClient,
+    model_name: str,
+    version: str,
+) -> None:
+    """Apply validation tags to a registered model version.
+
+    Args:
+        client: MLflow client.
+        model_name: Registered model name.
+        version: Model version.
+    """
     tags = build_model_version_tags(
         model_type="neural_reranker",
         validation_status="approved",
@@ -116,16 +119,53 @@ def register_model(
 
     for key, value in tags.items():
         client.set_model_version_tag(
-            name=registered_model_name,
-            version=model_version.version,
+            name=model_name,
+            version=version,
             key=key,
             value=value,
         )
 
+
+def register_model(
+    model_path: Path,
+    metrics_path: Path,
+    registered_model_name: str,
+    tracking_uri: str,
+    experiment_name: str,
+    run_name: str,
+) -> None:
+    """Register and promote a trained neural recommender model."""
+    configure_mlflow(
+        tracking_uri=tracking_uri,
+        experiment_name=experiment_name,
+    )
+
+    model, _ = load_neural_model(model_path)
+    metrics = load_metrics(metrics_path)
+
+    run_id = log_and_register_pytorch_model(
+        model,
+        metrics,
+        registered_model_name,
+        model_path,
+        metrics_path,
+        run_name,
+    )
+
+    client = MlflowClient(tracking_uri=tracking_uri)
+    model_version = find_model_version_by_run_id(
+        client=client,
+        model_name=registered_model_name,
+        run_id=run_id,
+    )
+    version = model_version.version
+
+    tag_registered_model_version(client, registered_model_name, version)
+
     promotion = promote_to_production(
         client=client,
         model_name=registered_model_name,
-        version=model_version.version,
+        version=version,
     )
 
     print(f"Registered model: {promotion.model_name}")

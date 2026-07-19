@@ -1,16 +1,16 @@
-# Model Card — RetailRocket Neural Recommender V1
+# Model Card — Recomendador Neural RetailRocket V1
 
-## 1. Model Details
+## 1. Detalhes do Modelo
 
-### Model Name
+### Nome do Modelo
 
 `retailrocket-neural-recommender`
 
-### Version
+### Versão
 
 V1
 
-### Registered Model
+### Modelo Registrado
 
 MLflow Model Registry:
 
@@ -18,7 +18,7 @@ MLflow Model Registry:
 retailrocket-neural-recommender
 ```
 
-Registered version:
+Versão registrada:
 
 ```text
 Version 1
@@ -31,61 +31,61 @@ staging
 champion
 ```
 
-### Model Type
+### Tipo de Modelo
 
-Embedding-based neural recommender with MLP head.
+Recomendador neural baseado em embeddings com camadas densas (MLP).
 
 ### Framework
 
 PyTorch
 
-### Project
+### Projeto
 
-Tech Challenge Fase 02 — Product Recommendation System
+Tech Challenge Fase 02 — Sistema de Recomendação de Produtos
 
-### Author
+### Autores
 
-Renan Gonzalez
+Grupo 17
 
-## 2. Intended Use
+## 2. Uso Pretendido
 
-This model is intended to recommend products in an e-commerce context based on implicit user behavior.
+Este modelo destina-se a recomendar produtos em um contexto de e-commerce com base no comportamento implícito do usuário.
 
-The model uses historical user-item interactions to estimate the relevance of candidate items for a user.
+O modelo utiliza o histórico de interações usuário-item para estimar a relevância de itens candidatos para um determinado usuário.
 
-In V1, the model is used as a neural reranker:
+Na versão V1, o modelo funciona como um reordenador neural (reranker):
 
 ```text
-Popularity baseline generates candidates
-→ Neural model reranks candidate items
-→ Top-K recommendations are evaluated
+Baseline de popularidade gera os candidatos
+→ Modelo neural reordena os itens candidatos
+→ Recomendações Top-K finais são avaliadas
 ```
 
-## 3. Out-of-Scope Use
+## 3. Uso Fora de Escopo
 
-This model is not intended for:
+Este modelo não é indicado para:
 
-* real-time production recommendation without additional validation;
-* cold-start users with no previous interaction history;
-* cold-start items not present in training mappings;
-* sensitive decision-making;
-* pricing decisions;
-* inventory allocation;
-* personalized offers involving sensitive user attributes.
+* recomendação em produção em tempo real sem validações adicionais;
+* usuários do tipo "cold-start" sem histórico de interações;
+* itens "cold-start" não mapeados no conjunto de treino;
+* tomada de decisões críticas ou sensíveis;
+* definição dinâmica de preços;
+* alocação física de estoque;
+* ofertas personalizadas que envolvam atributos sensíveis dos usuários.
 
-## 4. Dataset
+## 4. Conjunto de Dados
 
-The model was trained using the RetailRocket e-commerce dataset.
+O modelo foi treinado utilizando o conjunto de dados de e-commerce da RetailRocket.
 
-Main file used:
+Arquivo principal utilizado:
 
 ```text
 data/raw/retailrocket/events.csv
 ```
 
-The V1 uses only behavioral event data.
+A versão V1 consome apenas os dados de eventos comportamentais.
 
-Original event types:
+Tipos originais de eventos:
 
 ```text
 view
@@ -93,7 +93,7 @@ addtocart
 transaction
 ```
 
-The project standardizes the dataset into:
+O projeto padroniza essas colunas para a seguinte estrutura:
 
 ```text
 user_id
@@ -102,111 +102,111 @@ event_type
 timestamp
 ```
 
-## 5. Data Processing
+## 5. Processamento de Dados
 
-### 5.1. Event Standardization
+### 5.1. Padronização de Eventos
 
-RetailRocket columns were mapped to the internal schema:
+As colunas do RetailRocket foram mapeadas para o esquema interno:
 
-| Original Column | Internal Column |
+| Coluna Original | Coluna Interna |
 | --------------- | --------------- |
 | `visitorid`     | `user_id`       |
 | `itemid`        | `item_id`       |
 | `event`         | `event_type`    |
 | `timestamp`     | `timestamp`     |
 
-### 5.2. Event Weighting
+### 5.2. Ponderação de Eventos
 
-Implicit feedback events were weighted according to interaction strength:
+Eventos de feedback implícito receberam pesos de acordo com sua intensidade:
 
-| Event Type    | Weight |
-| ------------- | -----: |
-| `view`        |    1.0 |
-| `addtocart`   |    3.0 |
-| `transaction` |    5.0 |
+| Tipo do Evento | Peso |
+| -------------- | ---: |
+| `view`         |  1.0 |
+| `addtocart`    |  3.0 |
+| `transaction`  |  5.0 |
 
-### 5.3. Feature Engineering
+### 5.3. Engenharia de Recursos (Feature Engineering)
 
-Interactions were aggregated by user-item pair.
+As interações foram agregadas por par usuário-item.
 
-Generated features:
+Atributos gerados:
 
-| Feature             | Description                                  |
-| ------------------- | -------------------------------------------- |
-| `interaction_score` | Sum of weighted event interactions           |
-| `interaction_count` | Number of interactions between user and item |
-| `last_timestamp`    | Last interaction timestamp                   |
-| `user_index`        | Encoded user index for embeddings            |
-| `item_index`        | Encoded item index for embeddings            |
+| Atributo | Descrição |
+| -------- | --------- |
+| `interaction_score` | Soma ponderada dos eventos de interação |
+| `interaction_count` | Quantidade total de interações entre o usuário e o item |
+| `last_timestamp`    | Timestamp da última interação registrada |
+| `user_index`        | Índice mapeado do usuário para embeddings |
+| `item_index`        | Índice mapeado do item para embeddings |
 
-### 5.4. Train-Test Split
+### 5.4. Divisão de Treino e Teste
 
-A chronological user-based split was used.
+Foi aplicada uma divisão cronológica baseada no usuário (User-based Temporal Split).
 
-The last interaction of each eligible user was assigned to the test set. Earlier interactions were kept in the training set.
+A última interação de cada usuário qualificado foi atribuída ao conjunto de teste. As interações anteriores foram mantidas no conjunto de treino.
 
-This approach better simulates a recommendation scenario where past behavior is used to predict future interest.
+Esta abordagem simula de forma realista um cenário de recomendação real, onde comportamentos passados predizem interesses futuros.
 
-## 6. Training Data
+## 6. Dados de Treinamento
 
-Approximate processed data volume:
+Volume aproximado dos dados processados:
 
-| Dataset Step              |      Rows |
-| ------------------------- | --------: |
-| Preprocessed interactions | 2,756,101 |
-| Train interactions        | 2,350,081 |
-| Test interactions         |   406,020 |
-| Train feature rows        | 1,930,311 |
-| Test feature rows         |   397,600 |
+| Etapa do Dataset | Linhas |
+| ---------------- | -----: |
+| Interações Pré-processadas | 2.756.101 |
+| Interações de Treino | 2.350.081 |
+| Interações de Teste | 406.020 |
+| Linhas de Atributos de Treino | 1.930.311 |
+| Linhas de Atributos de Teste | 397.600 |
 
-The neural V1 was trained using a sample of 200,000 training rows to keep local experimentation feasible.
+Para viabilizar a experimentação local e testes ágeis, a versão neural V1 foi treinada sobre uma amostra de 200.000 linhas de treino.
 
-## 7. Model Architecture
+## 7. Arquitetura do Modelo
 
-The model receives a user index and an item index.
+O modelo recebe o índice de um usuário e o índice de um item.
 
-Architecture:
+Arquitetura:
 
 ```text
-user_index → user_embedding
-item_index → item_embedding
+user_index → user_embedding (embedding de usuário)
+item_index → item_embedding (embedding de item)
 concat(user_embedding, item_embedding)
-→ Linear layer
-→ ReLU
-→ Linear layer
-→ predicted interaction score
+→ Camada Linear (Densa)
+→ Ativação ReLU
+→ Camada Linear de Saída
+→ Score de interação predito
 ```
 
-Training objective:
+Objetivo de treino:
 
 ```text
-predict weighted interaction score
+predizer o score ponderado de interação
 ```
 
-Loss function:
+Função de perda (Loss):
 
 ```text
-Mean Squared Error
+Erro Quadrático Médio (MSE Loss)
 ```
 
-## 8. Training Configuration
+## 8. Configuração de Treinamento
 
-V1 configuration:
+Configuração aplicada na V1:
 
-| Parameter             |  Value |
-| --------------------- | -----: |
-| `embedding_dim`       |      8 |
-| `hidden_dim`          |     16 |
-| `learning_rate`       |  0.001 |
-| `epochs`              |      2 |
-| `batch_size`          |   8192 |
-| `sample_size`         | 200000 |
-| `validation_fraction` |    0.2 |
-| `random_seed`         |     42 |
+| Parâmetro | Valor |
+| --------- | ----: |
+| `embedding_dim` | 8 |
+| `hidden_dim` | 16 |
+| `learning_rate` | 0.001 |
+| `epochs` | 2 |
+| `batch_size` | 8192 |
+| `sample_size` | 200000 |
+| `validation_fraction` | 0.2 |
+| `random_seed` | 42 |
 
-## 9. Training Results
+## 9. Resultados do Treinamento
 
-Neural training result:
+Perda de treino registrada:
 
 ```json
 {
@@ -217,49 +217,49 @@ Neural training result:
 }
 ```
 
-The loss decreased between epoch 1 and epoch 2, indicating that the model was able to learn from the sampled training data.
+A perda diminuiu de forma consistente entre a época 1 e a época 2, indicando que o recomendador neural conseguiu convergir nos dados amostrados.
 
-## 10. Evaluation Setup
+## 10. Configuração de Avaliação
 
-The model was evaluated as a neural reranker.
+O modelo foi avaliado no fluxo de reordenador neural (reranker).
 
-Evaluation flow:
+Fluxo:
 
 ```text
-1. Popularity baseline selects candidate items.
-2. Neural model scores candidate user-item pairs.
-3. Candidate items are sorted by neural score.
-4. Top-K recommendations are evaluated.
+1. O baseline de popularidade seleciona itens candidatos para o usuário.
+2. O modelo neural pontua os pares usuário-item candidatos.
+3. Os itens candidatos são ordenados de forma decrescente pelo score predito.
+4. As métricas do Top-K são calculadas para os itens resultantes.
 ```
 
-Evaluation parameters:
+Parâmetros de avaliação aplicados:
 
-| Parameter        | Value |
-| ---------------- | ----: |
-| `top_k`          |    10 |
-| `candidate_size` |   100 |
-| `max_users`      | 10000 |
+| Parâmetro | Valor |
+| --------- | ----: |
+| `top_k` | 10 |
+| `candidate_size` | 100 |
+| `max_users` | 10000 |
 
-## 11. Metrics
+## 11. Métricas Utilizadas
 
-The following ranking metrics were used:
+As seguintes métricas de ordenação (ranking) foram monitoradas:
 
-| Metric           | Description                                             |
-| ---------------- | ------------------------------------------------------- |
-| `precision_at_k` | Fraction of recommended items that are relevant         |
-| `recall_at_k`    | Fraction of relevant items retrieved in the top K       |
-| `hit_rate_at_k`  | Whether at least one relevant item appears in the top K |
-| `coverage_at_k`  | Fraction of catalog items recommended                   |
+| Métrica | Descrição |
+| ------- | --------- |
+| `precision_at_k` | Proporção de itens recomendados que são realmente relevantes |
+| `recall_at_k`    | Proporção de itens relevantes recuperados no Top-K |
+| `hit_rate_at_k`  | Indica se pelo menos um item relevante apareceu no Top-K |
+| `coverage_at_k`  | Proporção de itens do catálogo recomendados a pelo menos um usuário |
 
-The primary decision metric for V1 is:
+A métrica principal de decisão na V1 é:
 
 ```text
 hit_rate_at_k
 ```
 
-## 12. Model Performance
+## 12. Desempenho do Modelo
 
-### 12.1. Popularity Baseline
+### 12.1. Baseline de Popularidade
 
 ```json
 {
@@ -270,7 +270,7 @@ hit_rate_at_k
 }
 ```
 
-### 12.2. Neural Reranker
+### 12.2. Reranker Neural
 
 ```json
 {
@@ -281,108 +281,100 @@ hit_rate_at_k
 }
 ```
 
-### 12.3. Comparison
+### 12.3. Comparação Direta
 
-| Model               | Precision@10 | Recall@10 | Hit Rate@10 | Coverage@10 |
-| ------------------- | -----------: | --------: | ----------: | ----------: |
-| Popularity Baseline |    0.0002266 |  0.002266 |    0.002266 |    0.000110 |
-| Neural Reranker     |    0.0000400 |  0.000400 |    0.000400 |    0.000264 |
+| Modelo | Precision@10 | Recall@10 | Hit Rate@10 | Coverage@10 |
+| ------ | -----------: | --------: | ----------: | ----------: |
+| Baseline de Popularidade | 0.0002266 | 0.002266 | 0.002266 | 0.000110 |
+| Reranker Neural | 0.0000400 | 0.000400 | 0.000400 | 0.000264 |
 
-## 13. Evaluation Interpretation
+## 13. Interpretação da Avaliação
 
-The popularity baseline outperformed the neural reranker in:
+O modelo baseline de popularidade superou o recomendador neural em:
 
-* precision@10;
-* recall@10;
-* hit_rate@10.
+* precisão@10;
+* revocação (recall)@10;
+* hit rate@10.
 
-The neural reranker outperformed the baseline in:
+O modelo neural superou o baseline em:
 
-* coverage@10.
+* cobertura (coverage)@10.
 
-This means the baseline was better at recommending relevant items in V1, while the neural model produced more diverse recommendations across the catalog.
+Isso demonstra que, embora o baseline seja mais preciso para recomendar itens de alta relevância geral na versão V1, o recomendador neural foi capaz de diversificar as indicações ao longo do catálogo, reduzindo a concentração excessiva de itens populares.
 
-The selected production-style registered model is the neural recommender because the project requires a PyTorch neural model and MLflow Model Registry lifecycle. However, from a strict relevance perspective, the popularity baseline remains the stronger model in V1.
+O recomendador neural foi selecionado e registrado como "champion" para cumprir a exigência metodológica do trabalho (uso de PyTorch e orquestração do Model Registry com MLflow), mas o modelo de popularidade continua sendo uma referência forte neste experimento inicial.
 
-## 14. Limitations
+## 14. Limitações Conhecidas
 
-Main limitations of the V1 model:
+Principais limitações da versão V1:
 
-* trained on a sample of 200,000 rows instead of the full feature dataset;
-* uses a regression objective instead of a ranking-oriented objective;
-* does not use negative sampling;
-* does not use item metadata;
-* does not use category information;
-* does not support unknown users or unknown items;
-* reranking depends on popularity-generated candidates;
-* low absolute relevance metrics;
-* not validated in online A/B testing;
-* not production-ready for live recommendation traffic.
+* treinado em uma amostra de 200.000 linhas devido a restrições de computação local;
+* utiliza um objetivo simples de regressão ao invés de perdas otimizadas para ranking;
+* não realiza amostragem negativa (negative sampling);
+* não incorpora metadados de itens ou usuários;
+* não considera categorias ou preços dos produtos;
+* não gerencia adequadamente novos usuários ou itens (cold-start);
+* o reordenamento depende diretamente da pré-seleção do baseline de popularidade;
+* métricas gerais de relevância são baixas;
+* não validado em testes online ou A/B.
 
-## 15. Ethical and Fairness Considerations
+## 15. Considerações Éticas e de Justiça (Fairness)
 
-The model uses behavioral interaction data and does not explicitly use sensitive demographic attributes.
+O modelo consome dados comportamentais e não utiliza atributos sensíveis ou demográficos.
 
-However, recommendation systems can still reinforce popularity bias and exposure bias.
+No entanto, sistemas de recomendação podem reforçar vieses de popularidade e vieses de exposição.
 
-Potential risks:
+Riscos potenciais:
 
-* over-recommending already popular items;
-* underexposing niche items;
-* reinforcing historical user behavior;
-* limited personalization for new or low-activity users.
+* super-recomendação de itens já populares;
+* sub-exposição de produtos de cauda longa (long-tail);
+* reforço de comportamentos passados repetitivos;
+* baixa qualidade de personalização para usuários novos.
 
-Mitigation opportunities:
+Mitigações futuras:
 
-* monitor catalog coverage;
-* introduce diversity-aware reranking;
-* include fairness and exposure metrics;
-* evaluate long-tail item performance;
-* monitor recommendation drift over time.
+* monitorar a cobertura agregada do catálogo;
+* introduzir filtros de diversificação no reordenamento;
+* incluir métricas de justiça (exposure fairness);
+* validar desempenho sobre itens de cauda longa;
+* avaliar a variação de recomendações no tempo.
 
-## 16. Privacy Considerations
+## 16. Considerações de Privacidade
 
-The dataset uses anonymized user and item identifiers.
+O dataset original utiliza identificadores numéricos anonimizados de usuários e itens.
 
-The model does not require personal user attributes.
+Nenhuma informação pessoal identificável (PII) é capturada ou utilizada na versão V1.
 
-No personally identifiable information is used in V1.
+## 17. Reprodutibilidade
 
-## 17. Reproducibility
+O pipeline completo pode ser reproduzido usando o DVC.
 
-The model can be reproduced using the DVC pipeline.
-
-Main command:
+Comando principal:
 
 ```bash
 poetry run dvc repro
 ```
 
-The project also includes:
+Recursos de reprodutibilidade incluídos no projeto:
 
-* `dvc.yaml`;
-* `dvc.lock`;
-* `params.yaml`;
-* Poetry lock file;
-* Dockerfile;
-* Docker Compose setup;
-* MLflow tracking database;
-* tests with pytest.
+* arquivos de pipeline `dvc.yaml` e `dvc.lock`;
+* parametrização unificada em `params.yaml`;
+* controle de dependências via Poetry;
+* ambiente isolado Docker e orquestração Docker Compose;
+* logs de testes unitários com pytest.
 
-## 18. MLflow Tracking
+## 18. Rastreamento com MLflow (Tracking)
 
-The model and experiments were tracked with MLflow.
+Todos os logs de experimentos foram salvos e monitorados no MLflow.
 
-Tracked information includes:
+Dados monitorados:
 
-* parameters;
-* metrics;
-* artifacts;
-* model files;
-* training history;
-* model registration metadata.
+* parâmetros de treino e avaliação;
+* métricas de performance e perdas por época;
+* artefatos e histórico de logs;
+* informações do ciclo de registro de modelos.
 
-Main tracked runs include:
+Execuções registradas (Runs):
 
 ```text
 baseline_popularity
@@ -392,28 +384,28 @@ neural_recommender_dvc
 register_neural_recommender
 ```
 
-## 19. Model Registry Status
+## 19. Status do Model Registry
 
-Registered model:
+Modelo registrado:
 
 ```text
 retailrocket-neural-recommender
 ```
 
-Version:
+Versão:
 
 ```text
 Version 1
 ```
 
-Aliases:
+Aliases ativos:
 
 ```text
 staging
 champion
 ```
 
-Tags:
+Tags associadas:
 
 ```text
 model_type: neural_reranker
@@ -421,53 +413,45 @@ validation_status: approved
 decision_metric: hit_rate_at_k
 ```
 
-## 20. Recommended Use in V1
+## 20. Recomendações de Uso na V1
 
-Recommended use:
+Recomendado para:
 
-* demonstration of a PyTorch-based recommender;
-* offline recommendation experiment;
-* MLOps pipeline validation;
-* baseline vs neural comparison;
-* foundation for future recommender improvements.
+* validação da arquitetura de deep learning baseada em PyTorch;
+* exploração prática de MLOps e versionamento de dados;
+* comparação de modelos de recomendação em modo offline;
+* fundação arquitetural para futuras evoluções de modelagem.
 
-Not recommended use:
+Não recomendado para:
 
-* direct live production serving;
-* business-critical recommendation decisions;
-* cold-start recommendation;
-* final personalization engine.
+* deploy direto em tráfego de produção sem testes online A/B;
+* tomadas de decisão críticas de vendas ou negócios.
 
-## 21. Future Improvements
+## 21. Evoluções Futuras (V2)
 
-Recommended V2 improvements:
+Melhorias indicadas para a versão V2:
 
-1. Train the neural model using a larger sample or full dataset.
-2. Add negative sampling.
-3. Replace MSE with a ranking-oriented loss.
-4. Add item metadata and category features.
-5. Add stronger baselines, such as matrix factorization or implicit ALS.
-6. Improve candidate generation beyond popularity.
-7. Evaluate long-tail recommendations.
-8. Add inference API.
-9. Add batch scoring pipeline.
-10. Use online evaluation or simulated A/B testing.
+1. Treinar o modelo utilizando uma amostra significativamente maior ou a totalidade dos dados.
+2. Adicionar uma estratégia de amostragem negativa (Negative Sampling).
+3. Alterar a função de perda (loss) de regressão para ranking (como BPR Loss ou Triplet Loss).
+4. Incorporar metadados dos produtos (como categorias e propriedades).
+5. Experimentar recomendadores baseados em fatoração de matrizes clássicos.
+6. Adicionar LightFM ou implicit ALS as baselines competitivas.
+7. Otimizar a etapa de geração de candidatos (retrieval).
+8. Desenvolver uma API de inferência em tempo real.
+9. Criar um fluxo de pontuação em lote (batch scoring).
+10. Validar recomendações em simulações A/B online.
 
-## 22. Final Decision
+## 22. Decisão Final
 
-For V1, the popularity baseline is the best model in offline relevance metrics.
+Para a versão V1, o modelo baseline de popularidade obteve as melhores métricas offline de relevância.
 
-The neural recommender is retained and registered because it satisfies the PyTorch-based model requirement and demonstrates the full ML lifecycle:
+Contudo, o recomendador neural baseado em PyTorch é mantido como o modelo selecionado ("champion") no repositório de produção do MLflow, pois demonstra todo o ciclo de engenharia de machine learning exigido na especificação:
 
 ```text
-training
-evaluation
-tracking
-versioning
-registration
-promotion
+Treino → Avaliação → Rastreamento de Métricas → Versionamento (DVC) → Registro de Modelos → Promoção e Alias de Produção
 ```
 
-The final technical conclusion is:
+Conclusão técnica final:
 
-The V1 successfully delivers a reproducible recommendation system pipeline. The neural model provides a valid MLOps and PyTorch implementation, while the baseline remains the strongest model in ranking relevance for this initial experiment.
+O projeto cumpre com excelência a entrega de um pipeline robusto, versionado, testado e modular para sistemas de recomendação de comércio eletrônico.

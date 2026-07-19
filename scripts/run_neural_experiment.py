@@ -4,6 +4,7 @@ import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from recommender.data import read_dataframe
 from recommender.data.io import ensure_parent_dir
@@ -82,41 +83,28 @@ def save_json(data: object, output_path: Path) -> None:
     output_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
-def run(
-    train_path: Path,
+def save_neural_artifacts(
+    model: Any,
     model_output_path: Path,
+    config: NeuralTrainingConfig,
+    result: Any,
+    history: list[dict[str, float]],
+    metrics: dict[str, float],
     metrics_output_path: Path,
     history_output_path: Path,
-    config: NeuralTrainingConfig,
-    run_name: str,
-    tracking_uri: str,
-    experiment_name: str,
-    sample_size: int | None,
 ) -> None:
-    """Run a tracked neural training experiment.
+    """Save all neural training artifacts to disk.
 
     Args:
-        train_path: Train feature dataset path.
+        model: Trained neural recommender.
         model_output_path: Model artifact output path.
-        metrics_output_path: Metrics output path.
-        history_output_path: Training history output path.
         config: Neural training configuration.
-        run_name: MLflow run name.
-        tracking_uri: MLflow tracking URI.
-        experiment_name: MLflow experiment name.
+        result: Training result.
+        history: Epoch history list.
+        metrics: Evaluation metrics.
+        metrics_output_path: Metrics output path.
+        history_output_path: History output path.
     """
-    train_data = read_dataframe(train_path)
-    original_training_rows = len(train_data)
-    train_data = sample_training_data(
-        data=train_data,
-        sample_size=sample_size,
-        random_seed=config.random_seed,
-    )
-
-    print(f"Original training rows: {original_training_rows}")
-    print(f"Effective training rows: {len(train_data)}")
-    model, result, history = train_neural_recommender(train_data, config)
-
     save_neural_model(
         model=model,
         path=model_output_path,
@@ -124,18 +112,32 @@ def run(
         result=result,
         history=history,
     )
-
-    params = build_neural_params(
-        config=config,
-        training_rows=len(train_data),
-        original_training_rows=original_training_rows,
-        sample_size=sample_size,
-    )
-    metrics = build_neural_metrics(result)
-
     save_json({**metrics, **asdict(config)}, metrics_output_path)
     save_json(history, history_output_path)
 
+
+def log_neural_experiment_to_mlflow(
+    run_name: str,
+    tracking_uri: str,
+    experiment_name: str,
+    params: dict[str, Any],
+    metrics: dict[str, float],
+    model_output_path: Path,
+    metrics_output_path: Path,
+    history_output_path: Path,
+) -> None:
+    """Log neural experiment run to MLflow.
+
+    Args:
+        run_name: MLflow run name.
+        tracking_uri: MLflow tracking URI.
+        experiment_name: MLflow experiment name.
+        params: Experiment parameters.
+        metrics: Evaluation metrics.
+        model_output_path: Model artifact path.
+        metrics_output_path: Metrics path.
+        history_output_path: History path.
+    """
     with start_mlflow_run(
         run_name=run_name,
         tracking_uri=tracking_uri,
@@ -148,6 +150,60 @@ def run(
             metrics_path=metrics_output_path,
             history_path=history_output_path,
         )
+
+
+def run(
+    train_path: Path,
+    model_output_path: Path,
+    metrics_output_path: Path,
+    history_output_path: Path,
+    config: NeuralTrainingConfig,
+    run_name: str,
+    tracking_uri: str,
+    experiment_name: str,
+    sample_size: int | None,
+) -> None:
+    """Run a tracked neural training experiment."""
+    train_data = read_dataframe(train_path)
+    original_training_rows = len(train_data)
+    train_data = sample_training_data(
+        data=train_data,
+        sample_size=sample_size,
+        random_seed=config.random_seed,
+    )
+
+    print(f"Original training rows: {original_training_rows}")
+    print(f"Effective training rows: {len(train_data)}")
+    model, result, history = train_neural_recommender(train_data, config)
+
+    metrics = build_neural_metrics(result)
+    save_neural_artifacts(
+        model,
+        model_output_path,
+        config,
+        result,
+        history,
+        metrics,
+        metrics_output_path,
+        history_output_path,
+    )
+
+    params = build_neural_params(
+        config=config,
+        training_rows=len(train_data),
+        original_training_rows=original_training_rows,
+        sample_size=sample_size,
+    )
+    log_neural_experiment_to_mlflow(
+        run_name,
+        tracking_uri,
+        experiment_name,
+        params,
+        metrics,
+        model_output_path,
+        metrics_output_path,
+        history_output_path,
+    )
 
     print(f"Logged MLflow run: {run_name}")
     print(f"Saved neural model to {model_output_path}")

@@ -41,36 +41,45 @@ def find_model_version_by_run_id(
     return max(matching_versions, key=lambda version: int(version.version))
 
 
-def promote_to_production(
+def transition_stage_and_set_alias(
     client: MlflowClient,
     model_name: str,
     version: str,
-) -> RegistryPromotionResult:
-    """Promote a model version through Staging and Production.
+    stage: str,
+    alias: str,
+) -> ModelVersion:
+    """Transition model version stage and set registry alias.
 
     Args:
         client: MLflow client.
         model_name: Registered model name.
         version: Model version.
+        stage: Destination stage.
+        alias: Target alias.
 
     Returns:
-        Promotion result.
+        Updated model version.
     """
-    client.transition_model_version_stage(
+    updated_version = client.transition_model_version_stage(
         name=model_name,
         version=version,
-        stage="Staging",
+        stage=stage,
         archive_existing_versions=True,
     )
-    client.set_registered_model_alias(model_name, "staging", version)
+    client.set_registered_model_alias(model_name, alias, version)
+    return updated_version
 
-    production_version = client.transition_model_version_stage(
-        name=model_name,
-        version=version,
-        stage="Production",
-        archive_existing_versions=True,
+
+def promote_to_production(
+    client: MlflowClient,
+    model_name: str,
+    version: str,
+) -> RegistryPromotionResult:
+    """Promote a model version through Staging and Production."""
+    transition_stage_and_set_alias(client, model_name, version, "Staging", "staging")
+    production_version = transition_stage_and_set_alias(
+        client, model_name, version, "Production", "champion"
     )
-    client.set_registered_model_alias(model_name, "champion", version)
 
     return RegistryPromotionResult(
         model_name=model_name,

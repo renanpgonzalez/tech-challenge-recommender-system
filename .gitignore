@@ -188,6 +188,7 @@ artifacts/
 # DVC
 .dvc/tmp/
 .dvc/cache/
+.dvc/dvc-storage/
 
 # Local ML artifacts
 models/**/*.pkl
@@ -239,3 +240,19 @@ mlruns/
 
 # DVC generated report
 reports/model_comparison_dvc.md
+
+# Context
+context/
+.DS_Store
+
+# Local DVC storage cache
+dvc-storage/**
+!dvc-storage/
+!dvc-storage/**/
+!dvc-storage/**/.gitkeep
+.dvc/dvc-storage/
+
+# Terraform local folders and files
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate*
