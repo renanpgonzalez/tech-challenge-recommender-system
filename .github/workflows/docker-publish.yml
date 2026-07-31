@@ -100,15 +100,54 @@ jobs:
             exit 0
           fi
 
-          echo "Enviando comando de atualização do Docker para a máquina $INSTANCE_ID..."
-          COMMANDS="[\"docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_TOKEN}\", \"docker stop mlflow-server || true\", \"docker rm mlflow-server || true\", \"docker system prune -a -f\", \"docker pull ${DOCKER_IMAGE}\", \"docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION=${AWS_REGION} -e MLFLOW_SERVER_ALLOWED_HOSTS=* ${DOCKER_IMAGE} mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ --host 0.0.0.0 --port 5000\"]"
-          
+          echo "Instância encontrada: $INSTANCE_ID"
+          echo "Construindo payload SSM com jq..."
+
+          PARAMS=$(jq -n \
+            --arg img "$DOCKER_IMAGE" \
+            --arg user "$DOCKERHUB_USERNAME" \
+            --arg pass "$DOCKERHUB_TOKEN" \
+            --arg region "$AWS_REGION" \
+            '{commands: [
+              "docker login -u \($user) -p \($pass)",
+              "docker stop mlflow-server || true",
+              "docker rm mlflow-server || true",
+              "docker system prune -a --volumes -f",
+              "docker pull \($img)",
+              "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION=\($region) -e MLFLOW_SERVER_ALLOWED_HOSTS=* \($img) mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ --host 0.0.0.0 --port 5000"
+            ]}')
+
+          echo "Enviando comando SSM para $INSTANCE_ID..."
           COMMAND_ID=$(aws ssm send-command \
             --region $AWS_REGION \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=$COMMANDS" \
+            --parameters "$PARAMS" \
             --comment "Atualizando container Docker do MLflow Server" \
             --query "Command.CommandId" --output text)
-            
-          echo "Comando SSM enviado com sucesso (ID: $COMMAND_ID). A imagem do MLflow está sendo atualizada no servidor."
+
+          echo "Comando enviado (ID: $COMMAND_ID). Aguardando execução no EC2..."
+
+          for i in $(seq 1 20); do
+            sleep 15
+            STATUS=$(aws ssm get-command-invocation \
+              --region $AWS_REGION \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "Status" --output text 2>/dev/null || echo "Pending")
+            echo "[$i/20] Status: $STATUS"
+            if [ "$STATUS" == "Success" ]; then
+              echo "✅ Container MLflow atualizado com sucesso!"
+              exit 0
+            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "Cancelled" ] || [ "$STATUS" == "TimedOut" ]; then
+              echo "❌ Falha na execução SSM. Logs:"
+              aws ssm get-command-invocation \
+                --region $AWS_REGION \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "StandardErrorContent" --output text
+              exit 1
+            fi
+          done
+          echo "⚠️ Timeout. Verifique manualmente o comando $COMMAND_ID"
+          exit 1
