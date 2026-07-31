@@ -21,7 +21,6 @@ COPY pyproject.toml poetry.lock ./
 
 RUN poetry config virtualenvs.create false \
     && poetry install --only main --no-root \
-    # Sobrescreve torch CUDA (do poetry.lock) com versão CPU-only (~800MB vs ~6GB)
     && pip install --no-cache-dir --force-reinstall torch --index-url https://download.pytorch.org/whl/cpu
 
 
