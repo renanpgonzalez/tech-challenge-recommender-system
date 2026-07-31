@@ -46,7 +46,7 @@ docker compose up mlflow
 | **Docker Compose** | v2 | Incluído no Docker Desktop |
 | **Git** | 2.x | [git-scm.com](https://git-scm.com/) |
 
-> **Nota**: GPU não é necessária. O projeto usa PyTorch CPU-only (`torch 2.13.0+cpu`) para garantir portabilidade máxima.
+> **Nota**: GPU não é necessária. O projeto usa PyTorch CPU-only (`torch 2.12.0`) para garantir portabilidade máxima.
 
 ---
 
@@ -133,7 +133,7 @@ As interações repetidas por usuário e item são somadas, gerando o atributo `
 
 * **Python 3.12**: Linguagem base estável.
 * **Poetry**: Gerenciamento de dependências rigoroso e do ambiente virtual.
-* **PyTorch 2.13 (CPU)**: Framework de Deep Learning para a rede neural.
+* **PyTorch 2.12 (CPU)**: Framework de Deep Learning para a rede neural.
 * **DVC (Data Version Control)**: Versionamento de dados e estruturação das fases de ML.
 * **MLflow 3.x**: Rastreamento de parâmetros, métricas e centralização de Model Registry.
 * **Docker & Docker Compose**: Garantia de portabilidade de ambientes.
@@ -159,7 +159,7 @@ poetry install
 poetry shell
 ```
 
-> **Nota sobre PyTorch**: O projeto usa `torch 2.13.0+cpu` (sem CUDA). Isso garante que a instalação funcione em qualquer máquina, independentemente de ter GPU ou não.
+> **Nota sobre PyTorch**: O projeto usa `torch 2.12.0` instalado via PyPI (sem CUDA). Isso garante compatibilidade com macOS, Linux e Windows sem necessidade de GPU.
 
 ---
 
@@ -217,20 +217,16 @@ data/raw/retailrocket/events.csv
 ```
 
 ### 10.1. Funcionamento do Cache do DVC
-O remote do DVC está configurado para salvar o cache de forma local na pasta `dvc-storage/tech-challenge-recommender-system`.
+O remote padrão do DVC está configurado para o S3 (usado pela pipeline CI/CD). Para execução local sem credenciais AWS, o `dvc repro` funciona diretamente — o remote só é necessário para cache (`dvc pull`/`dvc push`).
 
-Por essa razão, ao realizar um clone limpo, o comando `poetry run dvc pull` informará que não existem dados no remote do Git.
-
-Para recriar o pipeline e construir seu cache DVC local:
+Para recriar o pipeline localmente (sem AWS):
 1. Baixe o dataset da RetailRocket e salve o arquivo `events.csv` na pasta `data/raw/retailrocket/`.
 2. Rode o pipeline para processar e treinar:
    ```bash
    poetry run dvc repro
    ```
-3. Execute o push para sincronizar o cache DVC local:
-   ```bash
-   poetry run dvc push
-   ```
+
+> **Nota para avaliadores**: O passo `dvc push` requer credenciais AWS e é exclusivo da pipeline CI/CD. Avaliadores sem acesso AWS podem ignorá-lo — o `dvc repro` é autossuficiente.
 
 ---
 

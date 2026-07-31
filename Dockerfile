@@ -19,7 +19,10 @@ WORKDIR /build
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry config virtualenvs.create false \
+RUN pip install --no-cache-dir \
+        torch>=2.12.0,<2.13.0 \
+        --index-url https://download.pytorch.org/whl/cpu \
+    && poetry config virtualenvs.create false \
     && poetry install --only main --no-root
 
 
