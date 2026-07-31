@@ -75,9 +75,56 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:latest, ${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:${{ github.sha }}
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:buildcache,mode=max
 
+  run-pipeline:
+    name: Run DVC Pipeline & Upload MLflow DB
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "sa-east-1"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Dependencies
+        run: poetry install --only main
+
+      - name: Criar .env
+        run: cp .env.example .env
+
+      - name: Download Dataset do S3
+        run: |
+          mkdir -p data/raw/retailrocket
+          aws s3 cp s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/data/events.csv \
+            data/raw/retailrocket/events.csv \
+            --region $AWS_REGION
+          echo "Dataset baixado: $(wc -l < data/raw/retailrocket/events.csv) linhas"
+
+      - name: Executar Pipeline DVC
+        run: poetry run dvc repro
+
+      - name: Upload MLflow DB para S3
+        run: |
+          aws s3 cp mlflow.db \
+            s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/seed/mlflow.db \
+            --region $AWS_REGION
+          echo "✅ mlflow.db ($(du -sh mlflow.db | cut -f1)) enviado ao S3"
+
   deploy-to-aws:
     name: Continuous Deployment (SSM)
-    needs: build-and-push
+    needs: [build-and-push, run-pipeline]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
@@ -116,7 +163,7 @@ jobs:
               "docker system prune -a -f",
               "echo === Espaço em disco após limpeza === && df -h /",
               "mkdir -p /home/ec2-user/mlflow-data",
-              "if [ ! -f /home/ec2-user/mlflow-data/mlflow.db ]; then echo Bootstrapping mlflow.db do S3... && aws s3 cp s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/seed/mlflow.db /home/ec2-user/mlflow-data/mlflow.db --region \($region) && echo Bootstrap concluido || echo Nenhum seed encontrado no S3, iniciando db vazio; fi",
+              "echo Baixando mlflow.db atualizado do S3... && aws s3 cp s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/seed/mlflow.db /home/ec2-user/mlflow-data/mlflow.db --region \($region) && echo Download concluido || echo Aviso: sem seed no S3 usando db existente",
               "docker pull \($img)",
               "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION=\($region) -e MLFLOW_BACKEND_STORE_URI=sqlite:////data/mlflow.db -e MLFLOW_ARTIFACT_ROOT=s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ -e MLFLOW_CORS_ORIGINS=https://mlflow.recommender.cloud-ip.cc -v /home/ec2-user/mlflow-data:/data \($img)",
               "echo === Container iniciado === && docker ps --filter name=mlflow-server"
