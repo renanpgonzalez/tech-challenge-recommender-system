@@ -19,11 +19,12 @@ WORKDIR /build
 
 COPY pyproject.toml poetry.lock ./
 
-RUN pip install --no-cache-dir \
-        "torch>=2.12.0,<2.13.0" \
-        --index-url https://download.pytorch.org/whl/cpu \
-    && poetry config virtualenvs.create false \
-    && poetry install --only main --no-root
+RUN poetry config virtualenvs.create false \
+    && poetry install --only main --no-root \
+    && pip uninstall -y torch triton 2>/dev/null; \
+       pip freeze | grep -i "^nvidia" | cut -d= -f1 | xargs -r pip uninstall -y 2>/dev/null; \
+       pip install --no-cache-dir "torch==2.12.0+cpu" \
+         --index-url https://download.pytorch.org/whl/cpu
 
 
 FROM python:3.12-slim AS runtime
