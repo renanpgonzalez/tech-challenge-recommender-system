@@ -29,7 +29,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     VIRTUAL_ENV=/opt/venv \
     PATH="/opt/venv/bin:$PATH" \
-    PYTHONPATH=/workspace/src
+    PYTHONPATH=/workspace/src \
+    MLFLOW_SERVER_ALLOWED_HOSTS="*"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -40,4 +41,9 @@ WORKDIR /workspace
 COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
-CMD ["python", "scripts/validate_env.py"]
+CMD ["mlflow", "server", \
+     "--backend-store-uri", "sqlite:///mlflow.db", \
+     "--default-artifact-root", "s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/", \
+     "--host", "0.0.0.0", \
+     "--port", "5000", \
+     "--cors-allowed-origins", "https://mlflow.recommender.cloud-ip.cc"]
