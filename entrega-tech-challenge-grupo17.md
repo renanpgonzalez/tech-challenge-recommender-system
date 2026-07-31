@@ -20,7 +20,7 @@
    * *Nota 2 (Git Flow e Avaliação de Commits):* A branch `main` possui proteção estrita e só aceita commits oriundos de Pull Requests (PRs). Para manter o histórico limpo, utilizamos a estratégia de **Squash and Merge**. Portanto, para acompanhar a granularidade mais detalhada do trabalho e da evolução do código, solicitamos que os avaliadores analisem as abas de **Pull Requests** (fechados), pois cada commit na branch `main` possui em sua mensagem o link direto para o PR correspondente contendo todos os commits originais.
 
 2. **Apresentação do Projeto (Vídeo STAR):**
-   * **Vídeo Link (YouTube/Loom/Drive):** [https://www.youtube.com/watch?v=INSERT_YOUR_STAR_VIDEO_ID_HERE](https://www.youtube.com/watch?v=INSERT_YOUR_STAR_VIDEO_ID_HERE)
+   * **Vídeo Link (YouTube):** [https://www.youtube.com/watch?v=KXa8MuEMq4E](https://www.youtube.com/watch?v=KXa8MuEMq4E)
    * *Nota:* Vídeo pitch explicativo de 5 minutos detalhando a Situação (Situation), Tarefa (Task), Ações (Action) e Resultados (Result) da solução de recomendação construída.
 
 3. **Deploy em Ambiente de Produção (Central de Experimentos MLflow na AWS):**

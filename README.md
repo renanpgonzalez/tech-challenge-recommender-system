@@ -10,6 +10,7 @@ O objetivo do projeto é desenvolver, testar, rastrear e versionar um sistema de
 
 * **Documento de Entrega Detalhado**: [entrega-tech-challenge-grupo17.md](entrega-tech-challenge-grupo17.md)
 * **Repositório GitHub**: [renanpgonzalez/tech-challenge-recommender-system](https://github.com/renanpgonzalez/tech-challenge-recommender-system)
+* **Vídeo de Apresentação (STAR)**: [https://www.youtube.com/watch?v=KXa8MuEMq4E](https://www.youtube.com/watch?v=KXa8MuEMq4E)
 * **MLflow Tracking UI (Produção AWS)**: [https://mlflow.recommender.cloud-ip.cc](https://mlflow.recommender.cloud-ip.cc)
 * **Imagem Docker Hub**: [techchallengefase02/recommender-system](https://hub.docker.com/r/techchallengefase02/recommender-system)
 
@@ -455,8 +456,10 @@ poetry run ruff format .
 
 ## 23. Apresentação do Projeto (Método STAR)
 
-Como exigido pelas diretrizes de avaliação da FIAP, o vídeo explicativo do projeto está disponível no documento de entrega:
-* [entrega-tech-challenge-grupo17.md](entrega-tech-challenge-grupo17.md)
+Como exigido pelas diretrizes de avaliação da FIAP, o vídeo explicativo do projeto está disponível no YouTube:
+
+**🎬 [https://www.youtube.com/watch?v=KXa8MuEMq4E](https://www.youtube.com/watch?v=KXa8MuEMq4E)**
+
 * **Estrutura de Apresentação (STAR)**:
   - **Situação (Situation)**: O problema de negócio no e-commerce e o contexto do dataset da RetailRocket.
   - **Tarefa (Task)**: Os requisitos de MLOps, rastreamento de experimentos, reprodutibilidade e conformidade com arquitetura de software limpa.
