@@ -115,8 +115,10 @@ jobs:
               "docker rm mlflow-server || true",
               "docker system prune -a -f",
               "echo === Espaço em disco após limpeza === && df -h /",
+              "mkdir -p /home/ec2-user/mlflow-data",
+              "if [ ! -f /home/ec2-user/mlflow-data/mlflow.db ]; then echo Bootstrapping mlflow.db do S3... && aws s3 cp s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/seed/mlflow.db /home/ec2-user/mlflow-data/mlflow.db --region \($region) && echo Bootstrap concluido || echo Nenhum seed encontrado no S3, iniciando db vazio; fi",
               "docker pull \($img)",
-              "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION=\($region) -e MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow.db -e MLFLOW_ARTIFACT_ROOT=s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ -e MLFLOW_CORS_ORIGINS=https://mlflow.recommender.cloud-ip.cc \($img)",
+              "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION=\($region) -e MLFLOW_BACKEND_STORE_URI=sqlite:////data/mlflow.db -e MLFLOW_ARTIFACT_ROOT=s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ -e MLFLOW_CORS_ORIGINS=https://mlflow.recommender.cloud-ip.cc -v /home/ec2-user/mlflow-data:/data \($img)",
               "echo === Container iniciado === && docker ps --filter name=mlflow-server"
             ]}')
 
