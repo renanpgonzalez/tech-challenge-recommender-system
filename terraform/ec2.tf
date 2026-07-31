@@ -74,8 +74,8 @@ resource "aws_iam_policy" "s3_access_policy" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::fiappostech9mletgrupo17-fase02-mlflow-artifacts",
-          "arn:aws:s3:::fiappostech9mletgrupo17-fase02-mlflow-artifacts/*"
+          aws_s3_bucket.mlflow_artifacts.arn,
+          "${aws_s3_bucket.mlflow_artifacts.arn}/*"
         ]
       }
     ]
@@ -145,10 +145,11 @@ resource "aws_instance" "mlflow_server" {
                 --name mlflow-server \
                 --restart always \
                 -e AWS_DEFAULT_REGION=${var.aws_region} \
+                -e MLFLOW_SERVER_ALLOWED_HOSTS=* \
                 ${var.docker_image_mlflow} \
                 mlflow server \
                 --backend-store-uri sqlite:///mlflow.db \
-                --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ \
+                --default-artifact-root s3://${aws_s3_bucket.mlflow_artifacts.id}/ \
                 --host 0.0.0.0 \
                 --port 5000
               SCRIPT
