@@ -12,7 +12,7 @@ A arquitetura provisionada segue padrões recomendados de segurança de borda e 
 [Usuário / Pipeline CI/CD] 
        │
        ▼ (HTTPS / mlflow.recommender.cloud-ip.cc)
- [AWS WAF (Web Application Firewall)]  --> Aplica Rate Limiting (máx. 100 req/5min)
+ [AWS WAF (Web Application Firewall)]  --> Aplica Rate Limiting (máx. 2000 req/5min)
        │
        ▼
  [AWS CloudFront (CDN)]  --> Aplica Geo-Blocking (Apenas conexões de BR e PT)
@@ -69,7 +69,7 @@ terraform apply -auto-approve
 * A interface de tracking do MLflow deverá abrir normalmente com criptografia SSL (cadeado ativo).
 
 ### 2. Testando a Proteção do AWS WAF (Rate Limiting)
-O WAF bloqueia IPs que façam mais de 100 requisições a cada 5 minutos. Você pode testar disparando múltiplas chamadas rápidas via terminal (ex: usando `curl` em loop):
+O WAF bloqueia IPs que façam mais de 2000 requisições a cada 5 minutos. Você pode testar disparando múltiplas chamadas rápidas via terminal (ex: usando `curl` em loop):
 ```bash
 for i in {1..120}; do curl -I -s https://mlflow.recommender.cloud-ip.cc | grep "HTTP"; done
 ```
