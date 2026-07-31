@@ -112,8 +112,14 @@ jobs:
             --region $AWS_REGION
           echo "Dataset baixado: $(wc -l < data/raw/retailrocket/events.csv) linhas"
 
+      - name: Pull DVC Cache do S3
+        run: poetry run dvc pull --run-cache || echo "Cache vazio ou inacessível — rodando pipeline do zero"
+
       - name: Executar Pipeline DVC
         run: poetry run dvc repro
+
+      - name: Push DVC Cache para S3
+        run: poetry run dvc push --run-cache
 
       - name: Upload MLflow DB para S3
         run: |

@@ -1,4 +1,6 @@
 [core]
-    remote = localstorage
+    remote = s3remote
+['remote "s3remote"']
+    url = s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/dvc-cache/
 ['remote "localstorage"']
     url = dvc-storage/tech-challenge-recommender-system
