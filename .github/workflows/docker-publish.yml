@@ -165,13 +165,13 @@ jobs:
             '{commands: [
               "echo === Espaço em disco antes do deploy === && df -h /",
               "docker login -u \($user) -p \($pass)",
+              "echo Baixando nova imagem... && docker pull \($img)",
               "docker stop mlflow-server || true",
               "docker rm mlflow-server || true",
-              "docker system prune -a -f",
+              "docker image prune -f",
               "echo === Espaço em disco após limpeza === && df -h /",
               "mkdir -p /home/ec2-user/mlflow-data",
               "echo Baixando mlflow.db atualizado do S3... && aws s3 cp s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/seed/mlflow.db /home/ec2-user/mlflow-data/mlflow.db --region \($region) && echo Download concluido || echo Aviso: sem seed no S3 usando db existente",
-              "docker pull \($img)",
               "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION=\($region) -e MLFLOW_BACKEND_STORE_URI=sqlite:////data/mlflow.db -e MLFLOW_ARTIFACT_ROOT=s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ -e MLFLOW_CORS_ORIGINS=https://mlflow.recommender.cloud-ip.cc -v /home/ec2-user/mlflow-data:/data \($img)",
               "echo === Container iniciado === && docker ps --filter name=mlflow-server"
             ]}')
