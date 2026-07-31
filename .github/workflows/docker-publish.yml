@@ -45,6 +45,14 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
+      - name: Free Disk Space (Cleanup Runner)
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -91,7 +99,7 @@ jobs:
           fi
 
           echo "Enviando comando de atualização do Docker para a máquina $INSTANCE_ID..."
-          COMMANDS='["docker stop mlflow-server || true", "docker rm mlflow-server || true", "docker system prune -a -f", "docker pull '$DOCKER_IMAGE'", "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION='$AWS_REGION' '$DOCKER_IMAGE' mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ --host 0.0.0.0 --port 5000"]'
+          COMMANDS='["docker stop mlflow-server || true", "docker rm mlflow-server || true", "docker system prune -a -f", "docker pull '$DOCKER_IMAGE'", "docker run -d -p 5000:5000 --name mlflow-server --restart always -e AWS_DEFAULT_REGION='$AWS_REGION' -e MLFLOW_SERVER_ALLOWED_HOSTS=* '$DOCKER_IMAGE' mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ --host 0.0.0.0 --port 5000"]'
           
           COMMAND_ID=$(aws ssm send-command \
             --region $AWS_REGION \

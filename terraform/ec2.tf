@@ -74,8 +74,8 @@ resource "aws_iam_policy" "s3_access_policy" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::fiappostech9mletgrupo17-fase02-mlflow-artifacts",
-          "arn:aws:s3:::fiappostech9mletgrupo17-fase02-mlflow-artifacts/*"
+          aws_s3_bucket.mlflow_artifacts.arn,
+          "${aws_s3_bucket.mlflow_artifacts.arn}/*"
         ]
       }
     ]
@@ -145,10 +145,11 @@ resource "aws_instance" "mlflow_server" {
                 --name mlflow-server \
                 --restart always \
                 -e AWS_DEFAULT_REGION=${var.aws_region} \
+                -e MLFLOW_SERVER_ALLOWED_HOSTS=* \
                 ${var.docker_image_mlflow} \
                 mlflow server \
                 --backend-store-uri sqlite:///mlflow.db \
-                --default-artifact-root s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/ \
+                --default-artifact-root s3://${aws_s3_bucket.mlflow_artifacts.id}/ \
                 --host 0.0.0.0 \
                 --port 5000
               SCRIPT
@@ -175,6 +176,12 @@ resource "aws_acm_certificate" "mlflow_cert" {
   }
 }
 
+# Recurso para aguardar a validação do certificado ACM via DNS
+resource "aws_acm_certificate_validation" "mlflow_cert_validation" {
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.mlflow_cert.arn
+}
+
 # 6. AWS CloudFront: Distribuição HTTPS e Geo-Blocking
 resource "aws_cloudfront_distribution" "mlflow_cdn" {
   enabled = true
@@ -192,12 +199,32 @@ resource "aws_cloudfront_distribution" "mlflow_cdn" {
     }
   }
 
+  # Cache behavior para otimização de arquivos estáticos do MLflow (JS/CSS)
+  ordered_cache_behavior {
+    path_pattern     = "/static/*"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "EC2Origin"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 86400    # 1 dia
+    max_ttl                = 31536000 # 1 ano
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
   default_cache_behavior {
     target_origin_id       = "EC2Origin"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods         = ["GET", "HEAD"]
-    
+
     forwarded_values {
       query_string = true
       headers      = ["*"]
@@ -215,11 +242,11 @@ resource "aws_cloudfront_distribution" "mlflow_cdn" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate.mlflow_cert.arn
+    acm_certificate_arn      = aws_acm_certificate_validation.mlflow_cert_validation.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
-  
+
   web_acl_id = aws_wafv2_web_acl.mlflow_waf.arn
 }
 
@@ -244,7 +271,7 @@ resource "aws_wafv2_web_acl" "mlflow_waf" {
 
     statement {
       rate_based_statement {
-        limit              = 100
+        limit              = 2000
         aggregate_key_type = "IP"
       }
     }
