@@ -41,9 +41,9 @@ WORKDIR /workspace
 COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
-CMD ["mlflow", "server", \
-     "--backend-store-uri", "sqlite:///mlflow.db", \
-     "--default-artifact-root", "s3://fiappostech9mletgrupo17-fase02-mlflow-artifacts/", \
-     "--host", "0.0.0.0", \
-     "--port", "5000", \
-     "--cors-allowed-origins", "https://mlflow.recommender.cloud-ip.cc"]
+CMD mlflow server \
+    --backend-store-uri "${MLFLOW_BACKEND_STORE_URI:-sqlite:///mlflow.db}" \
+    --default-artifact-root "${MLFLOW_ARTIFACT_ROOT:-mlruns}" \
+    --host 0.0.0.0 \
+    --port 5000 \
+    --cors-allowed-origins "${MLFLOW_CORS_ORIGINS:-http://localhost:5000}"
