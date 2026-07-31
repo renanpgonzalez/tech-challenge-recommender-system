@@ -46,4 +46,5 @@ CMD mlflow server \
     --default-artifact-root "${MLFLOW_ARTIFACT_ROOT:-mlruns}" \
     --host 0.0.0.0 \
     --port 5000 \
+    --workers 1 \
     --cors-allowed-origins "${MLFLOW_CORS_ORIGINS:-http://localhost:5000}"
