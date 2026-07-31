@@ -8,22 +8,49 @@ O objetivo do projeto é desenvolver, testar, rastrear e versionar um sistema de
 
 ## 🔗 Links Oficiais do Projeto
 
-* **Documento de Entrega Detalhado**: [entrega-tech-challenge-grupo17.md](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/entrega-tech-challenge-grupo17.md)
-
-### 1.1. Apresentação do Projeto (Método STAR)
-
-Como exigido pelas diretrizes de avaliação da FIAP, o vídeo explicativo do projeto está disponível no link abaixo:
-
-* **Link do Vídeo**: [Clique aqui para assistir ao vídeo de apresentação](https://example.com) *(TODO)*
-* **Estrutura de Apresentação (STAR)**:
-  - **Situação (Situation)**: O problema de negócio no e-commerce e o contexto do dataset da RetailRocket.
-  - **Tarefa (Task)**: Os requisitos de MLOps, rastreamento de experimentos, reprodutibilidade e conformidade com arquitetura de software limpa.
-  - **Ação (Action)**: A modelagem PyTorch, o pipeline reprodutível DVC, os testes de CI com GitHub Actions e o provisionamento com Terraform na AWS.
-  - **Resultado (Result)**: Comparação de métricas offline (Hit Rate, Coverage), análise do Model Card e validação do ambiente.
+* **Documento de Entrega Detalhado**: [entrega-tech-challenge-grupo17.md](entrega-tech-challenge-grupo17.md)
+* **Repositório GitHub**: [renanpgonzalez/tech-challenge-recommender-system](https://github.com/renanpgonzalez/tech-challenge-recommender-system)
+* **MLflow Tracking UI (Produção AWS)**: [https://mlflow.recommender.cloud-ip.cc](https://mlflow.recommender.cloud-ip.cc)
+* **Imagem Docker Hub**: [techchallengefase02/recommender-system](https://hub.docker.com/r/techchallengefase02/recommender-system)
 
 ---
 
-## 1. Visão Geral do Projeto
+## ⚡ Quick Start — Para a Banca Avaliadora
+
+Forma mais rápida de rodar o projeto localmente, sem AWS, sem GPU:
+
+```bash
+# 1. Clonar o repositório
+git clone https://github.com/renanpgonzalez/tech-challenge-recommender-system.git
+cd tech-challenge-recommender-system
+
+# 2. Copiar variáveis de ambiente
+cp .env.example .env
+
+# 3. Subir o servidor MLflow via Docker Compose
+docker compose up mlflow
+# Acesse: http://localhost:5000
+```
+
+> O Docker Compose usa armazenamento **local** (sem necessidade de AWS ou credenciais).
+
+---
+
+## 1. Pré-requisitos
+
+| Ferramenta | Versão Mínima | Como instalar |
+|---|---|---|
+| **Python** | 3.12 | [python.org](https://www.python.org/downloads/) |
+| **Poetry** | 2.0+ | `pip install poetry` |
+| **Docker** | 24+ | [docs.docker.com](https://docs.docker.com/get-docker/) |
+| **Docker Compose** | v2 | Incluído no Docker Desktop |
+| **Git** | 2.x | [git-scm.com](https://git-scm.com/) |
+
+> **Nota**: GPU não é necessária. O projeto usa PyTorch CPU-only (`torch 2.13.0+cpu`) para garantir portabilidade máxima.
+
+---
+
+## 2. Visão Geral do Projeto
 
 O projeto entrega um fluxo completo de engenharia de machine learning (MLOps) composto por:
 * Processamento de dados robusto e padronizado;
@@ -41,7 +68,7 @@ O projeto entrega um fluxo completo de engenharia de machine learning (MLOps) co
 
 ---
 
-## 2. Problema de Negócio
+## 3. Problema de Negócio
 
 Uma plataforma de e-commerce deseja melhorar a descoberta de produtos para os seus clientes, recomendando produtos de alto interesse com base no seu comportamento histórico.
 
@@ -52,14 +79,14 @@ Dado que não existem avaliações explícitas (estrelas ou notas), o sistema co
 
 ---
 
-## 3. Conjunto de Dados (Dataset)
+## 4. Conjunto de Dados (Dataset)
 
 Utilizou-se o dataset público **RetailRocket**, que mapeia o comportamento de navegação de usuários reais.
 O dataset bruto é composto por interações sequenciais com carimbos de data/hora (timestamps).
 
 ---
 
-## 4. Estratégia de Ponderação de Eventos
+## 5. Estratégia de Ponderação de Eventos
 
 Para traduzir as ações implícitas em um score de afinidade contínuo, aplicou-se a seguinte ponderação:
 
@@ -71,9 +98,7 @@ As interações repetidas por usuário e item são somadas, gerando o atributo `
 
 ---
 
-## 5. Estrutura do Projeto
-
-A organização de pastas segue os padrões de Clean Code e Modularidade recomendados:
+## 6. Estrutura do Projeto
 
 ```text
 ├── .github/workflows/       # Workflows automatizados de CI/CD (GitHub Actions)
@@ -96,61 +121,91 @@ A organização de pastas segue os padrões de Clean Code e Modularidade recomen
 │       ├── tracking/        # Helpers de MLflow e promoção de modelos
 │       └── models/          # Classes de modelos (Baseline, PyTorch, Factory)
 ├── terraform/               # Códigos IaC para provisionamento AWS
-├── pyproject.toml           # Configurações de dependências do Poetry
-└── docker-compose.yml       # Orquestração local do MLflow e treinamento
+├── .env.example             # Template de variáveis de ambiente
+├── docker-compose.yml       # Orquestração local do MLflow e treinamento
+├── Dockerfile               # Imagem multi-stage otimizada (~865MB, CPU-only)
+└── pyproject.toml           # Configurações de dependências do Poetry
 ```
 
 ---
 
-## 6. Principais Tecnologias
+## 7. Principais Tecnologias
 
 * **Python 3.12**: Linguagem base estável.
 * **Poetry**: Gerenciamento de dependências rigoroso e do ambiente virtual.
-* **PyTorch**: Framework de Deep Learning para a rede neural.
+* **PyTorch 2.13 (CPU)**: Framework de Deep Learning para a rede neural.
 * **DVC (Data Version Control)**: Versionamento de dados e estruturação das fases de ML.
-* **MLflow**: Rastreamento de parâmetros, métricas e centralização de Model Registry.
+* **MLflow 3.x**: Rastreamento de parâmetros, métricas e centralização de Model Registry.
 * **Docker & Docker Compose**: Garantia de portabilidade de ambientes.
 * **Terraform**: Provisionamento IaC para deploy AWS.
 * **Pytest & Ruff**: Testes de código e garantia de estilo limpo.
 
 ---
 
-## 7. Instalação Local
+## 8. Instalação Local (Poetry)
 
-1. Instale o Poetry (caso não tenha instalado):
-   ```bash
-   pip install poetry
-   ```
-2. Clone o repositório e instale as dependências:
-   ```bash
-   poetry install
-   ```
-3. Ative o ambiente virtual:
-   ```bash
-   poetry shell
-   ```
+```bash
+# 1. Instale o Poetry (caso não tenha)
+pip install poetry
+
+# 2. Clone o repositório
+git clone https://github.com/renanpgonzalez/tech-challenge-recommender-system.git
+cd tech-challenge-recommender-system
+
+# 3. Instale as dependências
+poetry install
+
+# 4. Ative o ambiente virtual
+poetry shell
+```
+
+> **Nota sobre PyTorch**: O projeto usa `torch 2.13.0+cpu` (sem CUDA). Isso garante que a instalação funcione em qualquer máquina, independentemente de ter GPU ou não.
 
 ---
 
-## 8. Variáveis de Ambiente
+## 9. Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto com base no arquivo de exemplo `.env.example`:
+Crie um arquivo `.env` na raiz do projeto com base no arquivo de exemplo:
+
+```bash
+cp .env.example .env
+```
+
+O `.env.example` está documentado com todos os campos disponíveis:
 
 ```env
 APP_ENV=development
 RANDOM_SEED=42
+
 DATA_RAW_DIR=data/raw
 DATA_INTERIM_DIR=data/interim
 DATA_PROCESSED_DIR=data/processed
+
 MODEL_DIR=models
 REPORT_DIR=reports
+
 MLFLOW_TRACKING_URI=sqlite:///mlflow.db
 MLFLOW_EXPERIMENT_NAME=product-recommender
+
+# --- MLflow Server (usado no docker run) ---
+# Backend: SQLite local (padrão) ou postgresql://...
+MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow.db
+
+# Artefatos: local (padrão) ou s3://bucket/path/
+MLFLOW_ARTIFACT_ROOT=mlruns
+
+# CORS: domínio do frontend
+MLFLOW_CORS_ORIGINS=http://localhost:5000
+
+# Região AWS (necessário apenas para artefatos em S3)
+AWS_DEFAULT_REGION=sa-east-1
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
 ```
 
 ---
 
-## 9. Configuração de Dados
+## 10. Configuração de Dados
 
 O dataset original da RetailRocket pode ser baixado publicamente no Kaggle:
 * **Link para Download**: [Kaggle - Retailrocket eCommerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset)
@@ -161,8 +216,8 @@ Após baixar e descompactar o arquivo `.zip`, coloque o arquivo `events.csv` na 
 data/raw/retailrocket/events.csv
 ```
 
-### 9.1. Funcionamento do Cache do DVC
-O remote do DVC está configurado para salvar o cache de forma local na pasta `dvc-storage/tech-challenge-recommender-system`. 
+### 10.1. Funcionamento do Cache do DVC
+O remote do DVC está configurado para salvar o cache de forma local na pasta `dvc-storage/tech-challenge-recommender-system`.
 
 Por essa razão, ao realizar um clone limpo, o comando `poetry run dvc pull` informará que não existem dados no remote do Git.
 
@@ -179,7 +234,7 @@ Para recriar o pipeline e construir seu cache DVC local:
 
 ---
 
-## 10. Pipeline Reprodutível com DVC
+## 11. Pipeline Reprodutível com DVC
 
 O pipeline é composto por 9 etapas orquestradas pelo `dvc.yaml`:
 
@@ -201,7 +256,7 @@ poetry run dvc status
 
 ---
 
-## 11. Parâmetros do Pipeline
+## 12. Parâmetros do Pipeline
 
 Todos os parâmetros globais estão contidos no arquivo `params.yaml`.
 
@@ -229,26 +284,26 @@ neural:
 
 ---
 
-## 12. Modelos
+## 13. Modelos
 
-### 12.1. Baseline de Popularidade
+### 13.1. Baseline de Popularidade
 Modelo simples baseado na contagem de interações ponderadas acumuladas do conjunto de treino. Recomenda os itens mais populares do catálogo geral.
 
-Implementado em: [baseline.py](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/baseline.py)
+Implementado em: [baseline.py](src/recommender/models/baseline.py)
 
-### 12.2. Recomendador Neural
+### 13.2. Recomendador Neural
 Rede neural PyTorch baseada em embeddings que recebe o índice de usuário e de item e estima o score contínuo de afinidade através de camadas densas (MLP).
 
-Implementado em: [neural.py](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/neural.py)
+Implementado em: [neural.py](src/recommender/models/neural.py)
 
-### 12.3. Padrões de Projeto (Design Patterns)
+### 13.3. Padrões de Projeto (Design Patterns)
 Para assegurar a modularidade e facilidade de extensão de código:
-* **Classe Abstrata**: [BaseRecommender](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/base.py) define o contrato com métodos `fit`, `recommend`, `save` e `load`.
-* **Padrão Factory**: [RecommenderFactory](file:///Users/brunoabreu/postech/repos/tech-challenge-recommender-system/src/recommender/models/factory.py) permite instanciar de forma transparente os modelos com base em uma string identificadora (`popularity` ou `neural`).
+* **Classe Abstrata**: [BaseRecommender](src/recommender/models/base.py) define o contrato com métodos `fit`, `recommend`, `save` e `load`.
+* **Padrão Factory**: [RecommenderFactory](src/recommender/models/factory.py) permite instanciar de forma transparente os modelos com base em uma string identificadora (`popularity` ou `neural`).
 
 ---
 
-## 13. Estratégia de Avaliação Neural
+## 14. Estratégia de Avaliação Neural
 
 Para otimizar o tempo de avaliação sem testar todo o catálogo para todos os usuários:
 1. O baseline de popularidade seleciona 100 itens candidatos.
@@ -257,7 +312,7 @@ Para otimizar o tempo de avaliação sem testar todo o catálogo para todos os u
 
 ---
 
-## 14. Métricas de Avaliação
+## 15. Métricas de Avaliação
 
 * **Precision@K**: Proporção de recomendados relevantes.
 * **Recall@K**: Proporção de relevantes capturados.
@@ -268,7 +323,7 @@ A métrica norteadora principal é o **Hit Rate@10**.
 
 ---
 
-## 15. Resultados da Versão V1
+## 16. Resultados da Versão V1
 
 | Modelo | Precision@10 | Recall@10 | Hit Rate@10 | Coverage@10 |
 | ------ | -----------: | --------: | ----------: | ----------: |
@@ -279,54 +334,94 @@ O baseline foi superior em acurácia de relevância imediata (Hit Rate), porém 
 
 ---
 
-## 16. Servidor de Rastreamento (MLflow)
+## 17. Docker e Docker Compose
 
-O MLflow monitora os logs locais em um banco SQLite (`sqlite:///mlflow.db`).
-Para iniciar o servidor web do MLflow local:
+O projeto conta com uma imagem Docker multi-stage otimizada (~865MB, PyTorch CPU-only).
+
+### 17.1. Via Docker Compose (recomendado para uso local)
+
+O Docker Compose utiliza armazenamento **local** (SQLite + pasta `mlartifacts/`), sem necessidade de AWS:
+
 ```bash
-poetry run mlflow ui --backend-store-uri sqlite:///mlflow.db
+# Subir servidor MLflow local
+docker compose up mlflow
+# Acesse: http://localhost:5000
+
+# Rodar pipeline DVC dentro do container
+docker compose run --rm trainer dvc repro
+
+# Construir a imagem localmente
+docker compose build
 ```
-Em seguida, abra: `http://localhost:5000`
+
+### 17.2. Via `docker run` com `.env` (controle manual)
+
+```bash
+# 1. Configure o .env
+cp .env.example .env
+# Edite MLFLOW_ARTIFACT_ROOT, MLFLOW_BACKEND_STORE_URI conforme necessário
+
+# 2. Rodar com artefatos locais (padrão do .env.example, sem AWS)
+docker run -p 5000:5000 --env-file .env \
+  techchallengefase02/recommender-system:latest
+# Acesse: http://localhost:5000
+
+# 3. Rodar com artefatos em S3 (edite o .env com suas credenciais AWS)
+# Altere no .env:
+#   MLFLOW_ARTIFACT_ROOT=s3://seu-bucket/
+#   AWS_ACCESS_KEY_ID=xxx
+#   AWS_SECRET_ACCESS_KEY=xxx
+docker run -p 5000:5000 --env-file .env \
+  techchallengefase02/recommender-system:latest
+```
+
+### 17.3. Variáveis de ambiente do container
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `MLFLOW_BACKEND_STORE_URI` | `sqlite:///mlflow.db` | Backend de metadados |
+| `MLFLOW_ARTIFACT_ROOT` | `mlruns` | Destino dos artefatos (local ou S3) |
+| `MLFLOW_CORS_ORIGINS` | `http://localhost:5000` | Origens permitidas pela UI |
+| `AWS_DEFAULT_REGION` | `sa-east-1` | Região AWS (apenas para S3) |
 
 ---
 
-## 17. MLflow Model Registry
+## 18. Servidor de Rastreamento (MLflow)
+
+### Localmente via Poetry:
+```bash
+poetry run mlflow ui --backend-store-uri sqlite:///mlflow.db
+# Acesse: http://localhost:5000
+```
+
+### Localmente via Docker Compose:
+```bash
+docker compose up mlflow
+# Acesse: http://localhost:5000
+```
+
+### Em Produção (AWS):
+O servidor MLflow de produção está disponível em:
+**[https://mlflow.recommender.cloud-ip.cc](https://mlflow.recommender.cloud-ip.cc)**
+
+> Acesso restrito a IPs do Brasil e Portugal (AWS WAF Geo-Blocking).
+
+---
+
+## 19. MLflow Model Registry
 
 O recomendador neural é registrado no registry sob o nome `retailrocket-neural-recommender`.
 Os modelos que cumprem as exigências mínimas recebem a tag de validação `validation_status=approved` e são promovidos automaticamente para o alias `champion` e estágio `Production`.
 
 ---
 
-## 18. Docker e Docker Compose
-
-O projeto conta com imagens multi-stage otimizadas.
-
-1. Construir a imagem:
-   ```bash
-   docker compose build
-   ```
-2. Validar variáveis locais:
-   ```bash
-   docker compose run --rm trainer python scripts/validate_env.py
-   ```
-3. Iniciar servidor MLflow local:
-   ```bash
-   docker compose up mlflow
-   ```
-4. Rodar o pipeline do DVC isolado:
-   ```bash
-   docker compose run --rm trainer dvc repro
-   ```
-
----
-
-## 19. Infraestrutura de Nuvem (Terraform AWS)
+## 20. Infraestrutura de Nuvem (Terraform AWS)
 
 Localizada na pasta `terraform/`, a infraestrutura em nuvem provisiona uma arquitetura completa MLOps:
 * **S3 Bucket**: Persistência global de artefatos de experimentos.
-* **EC2 Instance (`t3.micro`)**: Hospeda o contêiner Docker do servidor MLflow central.
+* **EC2 Instance (`t3.micro`)**: Hospeda o contêiner Docker com o servidor MLflow central e o sistema de recomendação.
 * **CloudFront CDN**: Entrega HTTPS segura via ACM SSL e restrição geográfica (Whitelists BR e PT).
-* **AWS WAF**: Bloqueios adicionais de segurança e proteção de ataques (Rate Limit).
+* **AWS WAF**: Bloqueios adicionais de segurança e proteção de ataques (Rate Limit: 2000 req/5min por IP).
 
 Para iniciar e validar:
 ```bash
@@ -338,16 +433,16 @@ terraform plan
 
 ---
 
-## 20. Esteiras de CI/CD (GitHub Actions)
+## 21. Esteiras de CI/CD (GitHub Actions)
 
-* **`docker-publish.yml`**: Roda testes automatizados, constrói e publica a imagem Docker no Docker Hub, executando o deploy contínuo via AWS SSM.
+* **`docker-publish.yml`**: Roda testes automatizados, constrói e publica a imagem Docker no Docker Hub (~865MB), executando o deploy contínuo via AWS SSM na instância EC2.
 * **`coverage-publish.yml`**: Roda os testes, calcula a cobertura de código, gera o crachá e publica o HTML no GitHub Pages.
 * **`deploy-infra.yml`**: Executa `apply` ou `destroy` do Terraform.
 * **`restart-ec2.yml`**: Reinicia a máquina EC2 associada ao MLflow.
 
 ---
 
-## 21. Execução de Testes
+## 22. Execução de Testes
 
 Rode a suíte de testes unitários local:
 ```bash
@@ -362,6 +457,26 @@ poetry run ruff format .
 
 ---
 
-## 22. Status Atual do Projeto
+## 23. Apresentação do Projeto (Método STAR)
 
-Fase 2 entregue com sucesso: pipelines versionados e reprodutíveis no DVC, rastreamento ativo no MLflow, conteinerização Docker funcional, arquitetura limpa com padrões de projeto aplicados, validação de estilo sem erros e infraestrutura automatizada pronta.
+Como exigido pelas diretrizes de avaliação da FIAP, o vídeo explicativo do projeto está disponível no documento de entrega:
+* [entrega-tech-challenge-grupo17.md](entrega-tech-challenge-grupo17.md)
+* **Estrutura de Apresentação (STAR)**:
+  - **Situação (Situation)**: O problema de negócio no e-commerce e o contexto do dataset da RetailRocket.
+  - **Tarefa (Task)**: Os requisitos de MLOps, rastreamento de experimentos, reprodutibilidade e conformidade com arquitetura de software limpa.
+  - **Ação (Action)**: A modelagem PyTorch, o pipeline reprodutível DVC, os testes de CI com GitHub Actions e o provisionamento com Terraform na AWS.
+  - **Resultado (Result)**: Comparação de métricas offline (Hit Rate, Coverage), análise do Model Card e validação do ambiente.
+
+---
+
+## 24. Status Atual do Projeto
+
+Fase 2 entregue com sucesso:
+- ✅ Pipelines versionados e reprodutíveis no DVC
+- ✅ Rastreamento ativo no MLflow (local e produção AWS)
+- ✅ Conteinerização Docker funcional (~865MB, CPU-only)
+- ✅ Arquitetura limpa com padrões de projeto aplicados
+- ✅ 92 testes automatizados com cobertura publicada no GitHub Pages
+- ✅ Validação de estilo sem erros (Ruff)
+- ✅ Infraestrutura AWS automatizada (Terraform + CI/CD GitHub Actions)
+- ✅ MLflow em produção: [https://mlflow.recommender.cloud-ip.cc](https://mlflow.recommender.cloud-ip.cc)

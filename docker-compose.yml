@@ -4,6 +4,8 @@ services:
       context: .
       target: runtime
     container_name: recommender-mlflow
+    env_file:
+      - .env
     command: >
       mlflow server
       --backend-store-uri sqlite:////workspace/mlflow.db
@@ -20,6 +22,8 @@ services:
       context: .
       target: runtime
     container_name: recommender-trainer
+    env_file:
+      - .env
     command: dvc repro
     volumes:
       - .:/workspace
