@@ -15,15 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 RUN pip install --no-cache-dir --upgrade pip poetry
 
-# Instala torch CPU-only (evita baixar ~5GB de bibliotecas CUDA desnecessárias)
-RUN pip install --no-cache-dir torch>=2.12.0 --index-url https://download.pytorch.org/whl/cpu
-
 WORKDIR /build
 
 COPY pyproject.toml poetry.lock ./
 
 RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-root
+    && poetry install --only main --no-root \
+    # Sobrescreve torch CUDA (do poetry.lock) com versão CPU-only (~800MB vs ~6GB)
+    && pip install --no-cache-dir --force-reinstall torch --index-url https://download.pytorch.org/whl/cpu
 
 
 FROM python:3.12-slim AS runtime

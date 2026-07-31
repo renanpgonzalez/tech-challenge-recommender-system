@@ -71,8 +71,8 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          no-cache: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:latest, ${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/recommender-system:buildcache,mode=max
 
   deploy-to-aws:
